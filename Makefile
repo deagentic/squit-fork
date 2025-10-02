@@ -73,7 +73,7 @@ squit-rebuild: ## Reconstruir y ejecutar CLI de SQUIT (forzar rebuild completo)
 	@$(DOCKER) rmi squit-squit-cli:latest 2>/dev/null || true
 	@$(DOCKER_COMPOSE) --profile cli build --no-cache squit-cli
 	@echo "$(GREEN)Iniciando CLI...$(NC)"
-	@$(DOCKER_COMPOSE) --profile cli up squit-cli
+	@$(DOCKER_COMPOSE) --profile cli run --rm squit-cli
 
 squit-clean: ## Limpiar completamente contenedores e imágenes de SQUIT
 	@echo "$(YELLOW)Limpiando contenedores e imágenes...$(NC)"
