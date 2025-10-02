@@ -35,19 +35,18 @@ class CatalogEnricher:
             catalog_path: Path al archivo catalogo.csv o catalog.csv
         """
         if catalog_path is None:
-            # Buscar archivo de catálogo en múltiples ubicaciones
-            # Prioridad: app/data/ (real) > ../data/ (root) > ejemplos
-            app_data_path = Path(__file__).parent / "data"
-            root_data_path = Path(__file__).parent.parent / "data"
+            # Usar catálogo desde root data/ SOLAMENTE
+            # __file__ = app/agentic_adk/catalog_enricher.py
+            # .parent = app/agentic_adk/
+            # .parent.parent = app/
+            # .parent.parent.parent = root/
+            root_data_path = Path(__file__).parent.parent.parent / "data"
             
             candidates = [
-                # Prioridad 1: catálogo real en app/data/
-                app_data_path / "catalogo.csv",
-                # Prioridad 2: catálogo en root data/
+                # Prioridad 1: catálogo en root data/
                 root_data_path / "catalogo.csv",
                 root_data_path / "catalog.csv",
-                # Prioridad 3: ejemplos
-                app_data_path / "catalog.example.csv",
+                # Prioridad 2: ejemplo
                 root_data_path / "catalog.example.csv"
             ]
             
@@ -56,8 +55,8 @@ class CatalogEnricher:
                     catalog_path = candidate
                     break
             else:
-                # Fallback: usar catalogo.csv en app/data aunque no exista
-                catalog_path = app_data_path / "catalogo.csv"
+                # Fallback: usar catalogo.csv en root data/ aunque no exista
+                catalog_path = root_data_path / "catalogo.csv"
         
         self.catalog_path = catalog_path
         self.catalog_df = None

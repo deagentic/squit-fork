@@ -28,11 +28,11 @@ Catálogo de ejemplo de aplicaciones y dominios de negocio (formato simplificado
 
 El sistema busca automáticamente catálogos en este orden de prioridad:
 
-1. `app/data/catalogo.csv` ⭐ **(catálogo real con 280+ aplicaciones)**
-2. `data/catalogo.csv` (override personalizado)
-3. `data/catalog.csv` (alternativa)
-4. `app/data/catalog.example.csv` (ejemplo formato completo)
-5. `data/catalog.example.csv` (ejemplo formato simple)
+1. `data/catalogo.csv` ⭐ **(catálogo real con 280+ aplicaciones)**
+2. `data/catalog.csv` (alternativa)
+3. `data/catalog.example.csv` (ejemplo formato simple)
+
+**Ubicación única**: Solo usa archivos en `data/` (root), no en `app/data/`.
 
 **Nota**: Los archivos `*.csv` en esta carpeta están en `.gitignore`
 
