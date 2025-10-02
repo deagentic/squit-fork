@@ -1,0 +1,419 @@
+# ============================================================================
+# SQUIT - "SQL Quit" - Cursor AI Rules
+# Democratizando Código Legacy con IA
+# ============================================================================
+
+# IMPORTANTE: Este archivo define reglas y contexto específico para que
+# Cursor AI entienda mejor el proyecto y genere código consistente
+
+# ============================================================================
+# 📋 CONTEXTO DEL PROYECTO - DEMOCRATIZACIÓN DE CÓDIGO LEGACY
+# ============================================================================
+
+# Nombre: SQUIT - "SQL Quit"
+# Significado: Salir/Liberarse del código SQL críptico y mal documentado
+# Misión: Democratizar el acceso al conocimiento enterrado en código legacy
+# Propósito: Transformar millones de líneas sin documentar en conocimiento accesible
+# Enfoque: Estructuración + Búsqueda Híbrida + Comprensión con IA
+
+# Stack principal: Python 3.11+, BigQuery, Gemini API, Weaviate
+# Dataset: 3.4M objetos SQL de 275 servidores (décadas de código legacy)
+
+# PROBLEMA QUE RESOLVEMOS:
+# - Conocimiento tribal en cabezas de expertos
+# - Código sin documentar (millones de líneas)
+# - Onboarding de meses para nuevos devs
+# - Búsqueda ineficiente (texto exacto no funciona)
+# - Dependencias invisibles causan bugs
+
+# SOLUCIÓN - DEMOCRATIZACIÓN:
+# 1. Estructurar: Clasificar y ordenar el caos automáticamente
+# 2. Comprender: IA entiende y explica el código
+# 3. Buscar: Por intención en lenguaje natural, no sintaxis
+# 4. Democratizar: Accesible para todos, no solo expertos
+
+# ============================================================================
+# 🎯 ARQUITECTURA Y COMPONENTES
+# ============================================================================
+
+# Sistema BigQuery Vector (PRIMARY SYSTEM):
+# - Location: app/bigquery_vector/
+# - Componentes:
+#   * config.py: Configuración (NO modificar sin consultar)
+#   * chunking_pipeline.py: Pipeline core (696 líneas, crítico)
+#   * vector_search.py: Búsquedas avanzadas (502 líneas)
+#   * progress_tracker.py: Sistema de tracking (507 líneas)
+# - Estado: ✅ Production Ready
+# - NO hacer cambios destructivos sin confirmar
+
+# Sistema Agentic RAG (SECONDARY SYSTEM):
+# - Location: app/agentic_rag/
+# - Estado: ✅ Phase 1 Complete
+# - Integrado con Weaviate + Gemini
+
+# Cliente Base BigQuery:
+# - Location: app/squit_client/
+# - Estado: ✅ Stable
+# - Base para otros sistemas
+
+# ============================================================================
+# 🔧 REGLAS DE CÓDIGO
+# ============================================================================
+
+# Python Standards:
+# - SIEMPRE usar Python 3.11+ features
+# - SIEMPRE agregar type hints (from typing import ...)
+# - SIEMPRE documentar con docstrings estilo Google
+# - SIEMPRE manejar errores con try/except y logging
+# - NUNCA usar print() directo, usar logging.info/debug/error
+# - NUNCA hardcodear valores, usar config o variables de ambiente
+
+# Code Style:
+# - Formatter: black (línea max 100 chars)
+# - Linter: flake8
+# - Type checker: mypy
+# - Imports: organizar con isort
+# - Naming: snake_case para funciones/variables, PascalCase para clases
+
+# Docstrings (OBLIGATORIO para funciones públicas):
+"""
+Formato Google Style:
+
+def function_name(param1: str, param2: int) -> Dict[str, Any]:
+    '''
+    Descripción breve de la función.
+    
+    Descripción más detallada si es necesario, explicando
+    el comportamiento y casos especiales.
+    
+    Args:
+        param1: Descripción del primer parámetro.
+        param2: Descripción del segundo parámetro.
+        
+    Returns:
+        Descripción del valor de retorno.
+        
+    Raises:
+        ValueError: Si param2 es negativo.
+        
+    Example:
+        >>> result = function_name("test", 42)
+        >>> print(result)
+    '''
+"""
+
+# ============================================================================
+# 🗄️ BASE DE DATOS Y TABLAS
+# ============================================================================
+
+# BigQuery Project:
+# - Project: dfor-prj-dev
+# - Dataset: deacero_sql_objects
+# - Region: us-central1
+
+# Tablas principales (NO modificar estructura sin consultar):
+# 1. sql_objects_code (~3.4M rows): Objetos SQL originales
+# 2. intelligent_chunks (~5-10M rows): Chunks con metadatos
+# 3. chunk_embeddings (~5-10M rows): Chunks + embeddings (768 dims)
+# 4. pipeline_progress: Tracking de progreso
+# 5. pipeline_metrics: Métricas detalladas
+# 6. pipeline_errors: Errores con traceback
+
+# Modelo de embeddings:
+# - Nombre: gemini_embedding_model
+# - Endpoint: gemini-embedding-001
+# - Dimensiones: 768 (NO cambiar, optimizado)
+# - Task type: CODE_RETRIEVAL_QUERY
+
+# ============================================================================
+# 📊 PATRONES DE CÓDIGO ESPECÍFICOS
+# ============================================================================
+
+# 1. Configuración (SIEMPRE usar config.py):
+from bigquery_vector.config import BigQueryVectorConfig
+config = BigQueryVectorConfig()
+# NO hardcodear valores como PROJECT_ID, DATASET_ID, etc.
+
+# 2. Cliente BigQuery (SIEMPRE reutilizar):
+from google.cloud import bigquery
+client = bigquery.Client(project=config.PROJECT_ID)
+# NO crear múltiples clientes innecesariamente
+
+# 3. Logging (SIEMPRE usar):
+import logging
+logger = logging.getLogger(__name__)
+logger.info("Mensaje informativo")
+logger.error("Error: %s", error_message)
+# NO usar print() en código de producción
+
+# 4. Manejo de Errores (SIEMPRE robusto):
+try:
+    # Operación que puede fallar
+    result = operation()
+except SpecificException as e:
+    logger.error("Error específico: %s", e)
+    # Manejar apropiadamente
+except Exception as e:
+    logger.exception("Error inesperado")
+    raise  # Re-raise si es crítico
+
+# 5. Tracking de Progreso (USAR en operaciones largas):
+from bigquery_vector.progress_tracker import ProgressTracker
+tracker = ProgressTracker()
+run_id = tracker.start_run("operation_name")
+tracker.update_stage(run_id, "stage_name", "running", progress=50.0)
+# Registrar progreso para recovery
+
+# 6. Queries BigQuery (USAR f-strings con cuidado):
+query = f"""
+SELECT column1, column2
+FROM `{config.full_embeddings_table_id}`
+WHERE condition = 'value'
+LIMIT 1000
+"""
+# SIEMPRE usar table_id completo con backticks
+
+# ============================================================================
+# 🚫 PROHIBICIONES ESTRICTAS
+# ============================================================================
+
+# NUNCA:
+# - Commitear archivos de credenciales (.env, credentials.json, *.log)
+# - Hardcodear API keys o secrets
+# - Modificar tabla structure sin documentar
+# - Eliminar tracking/logging existente
+# - Cambiar dimensiones de embeddings (768 es optimizado)
+# - Usar print() en lugar de logging
+# - Ignorar errores silenciosamente
+# - Crear queries sin límites en producción
+# - Modificar archivos en app/bigquery_vector/ sin confirmar impacto
+
+# ============================================================================
+# ✅ MEJORES PRÁCTICAS
+# ============================================================================
+
+# SIEMPRE:
+# - Verificar que .env y credentials.json están en .gitignore
+# - Usar type hints en todas las funciones
+# - Documentar funciones públicas con docstrings
+# - Agregar logging detallado (info, debug, error)
+# - Manejar errores con try/except específico
+# - Usar config.py para valores configurables
+# - Validar inputs antes de procesar
+# - Agregar progreso/tracking en operaciones largas
+# - Escribir código auto-documentado y legible
+# - Preferir claridad sobre brevedad
+
+# Performance:
+# - Usar batch processing para operaciones masivas
+# - Limitar queries con LIMIT apropiado
+# - Reutilizar conexiones BigQuery
+# - Cache resultados cuando sea posible
+# - Monitor memory usage en operaciones grandes
+
+# Testing:
+# - Escribir tests unitarios para nuevas funciones
+# - Usar mocks para dependencias externas
+# - Tests de integración para flujos críticos
+# - Validar edge cases
+
+# ============================================================================
+# 📁 ESTRUCTURA DE ARCHIVOS
+# ============================================================================
+
+# Scripts (scripts/):
+# - run_bigquery_pipeline.py: Ejecutor principal (NO modificar flujo core)
+# - monitor_pipeline.py: Monitor en tiempo real
+# - bigquery_search_chunks.py: Script de búsquedas
+
+# Documentación (docs/):
+# - BIGQUERY_VECTOR_COMPLETE.md: Documentación técnica completa (548 líneas)
+# - SYSTEM_OVERVIEW.md: Overview ejecutivo
+# - AGENTIC_RAG.md: Sistema agentic
+# - API.md: Referencia de APIs
+
+# Configuración (root):
+# - .env: Variables de ambiente (NO commitear)
+# - env.example: Template de configuración
+# - .gitignore: Protección de credenciales (robusto, 476 líneas)
+# - README.md: Documentación principal
+
+# ============================================================================
+# 🔍 BÚSQUEDAS Y QUERIES
+# ============================================================================
+
+# Búsqueda Semántica (PATRÓN ESTÁNDAR):
+from bigquery_vector.vector_search import BigQueryVectorSearch
+search = BigQueryVectorSearch()
+results = search.semantic_search(
+    query="descripción en lenguaje natural",
+    limit=10,
+    business_domains=["ventas"],  # Opcional
+    object_types=["PROCEDURE"],   # Opcional
+    use_hybrid=True               # 70% vector + 30% keywords
+)
+
+# Dominios de negocio válidos:
+# - ventas, inventario, finanzas, produccion, logistica, recursos_humanos, compras
+
+# Tipos de objetos válidos:
+# - PROCEDURE, TABLE, VIEW, FUNCTION, TRIGGER, etc.
+
+# ============================================================================
+# 🔄 PIPELINE Y ETL
+# ============================================================================
+
+# Pipeline Completo (3 ETAPAS):
+# 1. Chunking (~30-45 min): Clasificación + chunking inteligente
+# 2. Embeddings (~2-4 horas): Gemini API (300-500 embeds/seg)
+# 3. Vector Index (~10-15 min): Crear índice IVF
+
+# Ejecutar Pipeline:
+from bigquery_vector.chunking_pipeline import BigQueryChunkingPipeline
+pipeline = BigQueryChunkingPipeline()
+run_id = pipeline.run_full_pipeline()
+# Automáticamente crea tracking y permite recovery
+
+# Recovery desde Checkpoint:
+# Si pipeline se interrumpe, usar:
+# python scripts/run_bigquery_pipeline.py --skip-chunks
+# El sistema detecta automáticamente el progreso
+
+# ============================================================================
+# 🐛 DEBUGGING Y TROUBLESHOOTING
+# ============================================================================
+
+# Para debugging:
+# 1. Revisar logs: grep "ERROR" *.log
+# 2. Ver tracking: python scripts/run_bigquery_pipeline.py --list-runs
+# 3. Reporte detallado: python scripts/run_bigquery_pipeline.py --report RUN_ID
+# 4. Validar sistema: python scripts/run_bigquery_pipeline.py --validate
+
+# Errores comunes:
+# - "Vertex AI connection not found": Crear conexión con bq mk --connection
+# - "Not enough rows for IVF index": Usar búsqueda sin índice (< 5K rows)
+# - "Pipeline interrupted": Usar --skip-chunks para continuar
+# - "Import error": Verificar sys.path.insert() en scripts
+
+# ============================================================================
+# 📝 MENSAJES DE COMMIT
+# ============================================================================
+
+# Formato:
+# <type>: <description>
+#
+# Types:
+# - feat: Nueva funcionalidad
+# - fix: Corrección de bug
+# - docs: Cambios en documentación
+# - style: Formateo, sin cambio de lógica
+# - refactor: Refactorización sin cambio de funcionalidad
+# - test: Agregar o modificar tests
+# - chore: Mantenimiento, dependencies
+
+# Ejemplo:
+# feat: agregar filtro por complejidad en búsqueda semántica
+#
+# - Agregar parámetro min_complexity a semantic_search()
+# - Actualizar documentación en API.md
+# - Agregar tests unitarios
+
+# ============================================================================
+# 🤖 INTERACCIÓN CON CURSOR AI
+# ============================================================================
+
+# Cuando Cursor AI sugiera código, DEBE:
+# - Seguir todos los patrones de este archivo
+# - Agregar type hints completos
+# - Incluir docstrings estilo Google
+# - Usar logging en lugar de print()
+# - Manejar errores apropiadamente
+# - Respetar la estructura existente
+# - Consultar .cursor/prompts.md para patrones comunes
+# - Revisar .cursor/architecture.md para entender relaciones
+
+# Cuando Cursor AI modifique archivos core (app/bigquery_vector/), DEBE:
+# - Confirmar cambios antes de aplicar
+# - Explicar impacto de los cambios
+# - Actualizar documentación si es necesario
+# - Ejecutar tests después de cambios
+# - Verificar que no rompa integración con tracking
+# - Mantener backward compatibility
+
+# Cuando Cursor AI cree archivos nuevos, DEBE:
+# - Verificar que no estén en .gitignore innecesariamente
+# - Verificar que no estén en .cursorignore si son relevantes
+# - Seguir estructura de directorio existente
+# - Agregar header con descripción
+# - Incluir en documentación si es relevante
+# - Agregar tests unitarios correspondientes
+
+# Archivos de Contexto para Cursor AI:
+# - .cursorrules: Este archivo, reglas del proyecto
+# - .cursorignore: Archivos a excluir del contexto
+# - .cursor/prompts.md: Prompts reutilizables y patrones
+# - .cursor/architecture.md: Diagramas y arquitectura
+# - CONTRIBUTING.md: Guía de contribución
+# - README.yml: Contexto estructurado del proyecto
+
+# Uso de Memoria de Contexto:
+# - Cursor AI mantiene contexto de conversación
+# - Usar @filename para incluir archivos específicos
+# - Usar @folder para incluir directorios
+# - Dividir tareas grandes en subtareas manejables
+# - Proporcionar contexto específico en cada prompt
+
+# Iteración y Refinamiento:
+# - Tratar a Cursor AI como desarrollador junior que necesita orientación
+# - Proporcionar feedback específico sobre código generado
+# - Solicitar mejoras iterativas en lugar de solución perfecta
+# - Validar siempre el código generado antes de commitear
+
+# Mejores Prácticas de Prompts:
+# - Ser específico: lenguaje, framework, patrones esperados
+# - Incluir ejemplos de código existente como referencia
+# - Especificar qué NO hacer además de qué hacer
+# - Mencionar restricciones de performance si aplican
+# - Solicitar explicación de decisiones de diseño
+
+# Validación del Código Generado:
+# - Verificar que no contenga errores lógicos
+# - Revisar vulnerabilidades de seguridad
+# - Validar que cumple requisitos funcionales
+# - Ejecutar tests antes de aceptar
+# - Verificar que sigue convenciones del proyecto
+
+# ============================================================================
+# 📞 CONTACTO Y RECURSOS
+# ============================================================================
+
+# Equipo: Grupo DeAcero
+# Email: ktouma@deacero.com
+# Documentación: docs/
+# README principal: README.md (con badges, quick start, ejemplos)
+
+# Recursos Externos:
+# - BigQuery ML: https://cloud.google.com/bigquery/docs/generate-text-embedding
+# - Vector Search: https://cloud.google.com/bigquery/docs/vector-search
+# - Gemini API: https://ai.google.dev/docs
+# - Google ADK: https://google.github.io/adk-docs/
+
+# ============================================================================
+# 🤖 MODELOS DE IA
+# ============================================================================
+
+# IMPORTANTE: SIEMPRE usar gemini-2.5-flash para agentes y chat
+# - Modelo de chat: gemini-2.5-flash (NO usar 2.0-flash-exp)
+# - Modelo de embeddings: gemini-embedding-001 (768 dims)
+# - Task type para embeddings: CODE_RETRIEVAL_QUERY
+
+# Configuración de generación:
+# - Temperature: 0.1 (baja para respuestas deterministas)
+# - Max tokens: 8000
+# - Top P: 0.95
+
+# ============================================================================
+# FIN DE CURSOR RULES
+# ============================================================================
+# Última actualización: 2025-09-30
+# Versión: 2.0.0

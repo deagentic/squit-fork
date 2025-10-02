@@ -1,0 +1,72 @@
+# Docker Compose para SQUIT
+
+services:
+  squit-client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: squit-bigquery-client
+    env_file:
+      - .env
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
+      - PYTHONUNBUFFERED=1
+      - GRPC_VERBOSITY=ERROR
+      - GLOG_minloglevel=2
+    volumes:
+      # Montar credenciales de forma segura (solo lectura) en directorio temporal
+      - ./credentials.json:/tmp/credentials.json:ro
+      # Montar código para desarrollo (comentar en producción)
+      - ./app:/app:ro
+    networks:
+      - squit-network
+    restart: unless-stopped
+    # Límites de recursos
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import sys; sys.path.insert(0, '/app'); import squit_client; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Servicio opcional para desarrollo con Jupyter
+  squit-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: squit-dev-env
+    env_file:
+      - .env
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
+      - JUPYTER_ENABLE_LAB=yes
+    volumes:
+      - ./credentials.json:/tmp/credentials.json:ro
+      - ./app:/app
+      - ./docs:/docs
+      - jupyter-data:/home/jovyan/work
+    ports:
+      - "8888:8888"
+    networks:
+      - squit-network
+    profiles:
+      - dev
+    command: start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''
+
+networks:
+  squit-network:
+    driver: bridge
+    name: squit-network
+
+volumes:
+  jupyter-data:
+    driver: local

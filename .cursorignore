@@ -1,0 +1,189 @@
+# ============================================================================
+# .cursorignore - Archivos a excluir del contexto de Cursor AI
+# ============================================================================
+# Este archivo le indica a Cursor AI qué archivos NO debe incluir en el
+# contexto cuando genera código o responde preguntas.
+# Esto mejora el performance y evita confusión con archivos irrelevantes.
+# ============================================================================
+
+# ============================================================================
+# 🔐 CREDENCIALES Y SECRETS (NUNCA INCLUIR)
+# ============================================================================
+.env
+.env.*
+!.env.template
+!.env.example
+*.key
+*.pem
+credentials.json
+.config/credentials.json
+*-credentials.json
+!.config/credentials.example.json
+!**/credentials.example.json
+service-account*.json
+secrets/
+.secrets/
+
+# ============================================================================
+# 📦 DEPENDENCIAS Y BUILD ARTIFACTS
+# ============================================================================
+# Librerías de terceros (no nuestro código)
+node_modules/
+venv/
+env/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ============================================================================
+# 📊 DATOS Y ARCHIVOS GRANDES
+# ============================================================================
+# Datos que no son relevantes para generar código
+# NOTA: Permitir archivos .example.* para que usuarios los vean
+*.csv
+!*.example.csv
+!catalog.example.csv
+*.parquet
+*.avro
+*.pkl
+*.pickle
+*.db
+*.sqlite
+*.sqlite3
+# Ignorar data/ PERO permitir README y ejemplos
+data/*
+!data/README.md
+!data/*.example.csv
+!data/catalog.example.csv
+datasets/
+*.jsonl
+*.ndjson
+
+# Exports de BigQuery (datos, no estructura)
+bigquery_exports/
+bq_exports/
+
+# ============================================================================
+# 📝 LOGS Y TEMPORALES
+# ============================================================================
+# Archivos de logs (demasiado ruido para la IA)
+*.log
+logs/
+*.log.*
+log_*.txt
+pipeline_*.log
+
+# Archivos temporales
+tmp/
+temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# ============================================================================
+# 🧪 TEST OUTPUTS Y COVERAGE
+# ============================================================================
+# Reportes de tests (no código fuente)
+htmlcov/
+.coverage
+coverage/
+.pytest_cache/
+test-results/
+*.coverage.*
+
+# ============================================================================
+# 🐳 DOCKER Y DEPLOYMENT
+# ============================================================================
+# Archivos de deployment (context diferente)
+.dockerignore
+Dockerfile.prod
+
+# Volúmenes de Docker
+volumes/
+docker-volumes/
+
+# ============================================================================
+# 🎨 ASSETS Y MULTIMEDIA
+# ============================================================================
+# Archivos binarios que la IA no puede leer
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.pdf
+*.mp4
+*.mov
+*.zip
+*.tar.gz
+
+# ============================================================================
+# 📚 DOCUMENTACIÓN GENERADA
+# ============================================================================
+# Documentación auto-generada (puede regenerarse)
+site/
+_site/
+.docusaurus/
+
+# ============================================================================
+# 🔧 IDE Y EDITORES
+# ============================================================================
+# Configuraciones específicas del IDE (no del proyecto)
+.vscode/settings.json
+.vscode/launch.json
+.idea/workspace.xml
+.idea/tasks.xml
+
+# ============================================================================
+# 📊 ARCHIVOS DE SISTEMA
+# ============================================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================================================
+# 🚫 ARCHIVOS ESPECÍFICOS A EXCLUIR
+# ============================================================================
+
+# Archivos de tracking de BigQuery (datos, no código)
+pipeline_progress_*.json
+checkpoint_*.json
+
+# Modelos entrenados (binarios grandes)
+*.h5
+*.model
+*.joblib
+models/
+
+# Cache de Weaviate
+weaviate-data/
+.weaviate/
+
+# ============================================================================
+# ✅ EXCEPCIONES - Archivos que SÍ deben estar disponibles
+# ============================================================================
+# Permitir archivos de ejemplo y documentación para usuarios
+!.config/README.md
+!.config/credentials.example.json
+!data/README.md
+!data/catalog.example.csv
+!.env.template
+!env.example
+
+# ============================================================================
+# ✅ NOTAS IMPORTANTES
+# ============================================================================
+# - Cursor AI SOLO verá archivos de código fuente relevantes
+# - Esto mejora la velocidad y precisión de las respuestas
+# - La IA seguirá teniendo acceso a la estructura de carpetas
+# - Puedes usar @filename para incluir archivos específicos manualmente
+# - Archivos .example.* y README.md están permitidos explícitamente
+# ============================================================================

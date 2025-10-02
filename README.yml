@@ -1,0 +1,362 @@
+# SQUIT - "SQL Quit": Democratizando Código Legacy con IA
+# README.yml para Cursor AI
+# Contexto estructurado del proyecto con enfoque en democratización
+
+project:
+  name: SQUIT
+  full_name: "SQL Quit - Democratizing Legacy Code with AI"
+  tagline: "Libérate del código SQL críptico. Democratiza el conocimiento legacy."
+  version: "2.0.0"
+  
+  mission: |
+    Democratizar el acceso al conocimiento enterrado en millones de líneas de código SQL legacy,
+    transformando el caos incomprensible en conocimiento estructurado y accesible mediante IA.
+    
+    "SQL Quit" = Salir del código críptico. Liberarse de la dependencia de expertos.
+    
+  description: |
+    Sistema de estructuración inteligente y búsqueda vectorial híbrida para código SQL legacy.
+    Ordena, clasifica y hace comprensible el código sin documentar mediante embeddings semánticos,
+    permitiendo búsqueda por intención y análisis de impacto automático.
+  
+  status: "Production Ready"
+  last_updated: "2025-09-30"
+  
+  core_values:
+    - "Democratización del conocimiento"
+    - "Accesibilidad para todos, no solo expertos"
+    - "IA como herramienta de comprensión"
+    - "Búsqueda por intención, no sintaxis"
+    - "Documentación auto-generada"
+  
+  tech_stack:
+    - Python 3.11+
+    - Google BigQuery (Native Vector Search)
+    - Gemini API (embedding-001)
+    - Weaviate (Vector Database)
+    - Docker
+
+problem_statement:
+  title: "El Reto del Código Legacy"
+  
+  challenges:
+    - challenge: "Conocimiento Tribal"
+      description: "Lógica de negocio crítica solo en cabezas de desarrolladores veteranos"
+      impact: "Alto riesgo de pérdida de conocimiento"
+    
+    - challenge: "Código Sin Documentar"
+      description: "Millones de líneas sin comentarios ni documentación"
+      impact: "Barreras de entrada masivas"
+    
+    - challenge: "Búsqueda Ineficiente"
+      description: "Buscar por texto exacto en 3.4M objetos no encuentra lo que necesitas"
+      impact: "Horas perdidas buscando lógica"
+    
+    - challenge: "Dependencias Invisibles"
+      description: "Cambios rompen sistemas sin advertencia previa"
+      impact: "Riesgo operacional alto"
+    
+    - challenge: "Onboarding Largo"
+      description: "Nuevos desarrolladores tardan meses en ser productivos"
+      impact: "Baja velocity del equipo"
+  
+  solution_approach:
+    democratization: "Hacer el conocimiento accesible para todos"
+    structuring: "Ordenar el caos con clasificación automática"
+    ai_comprehension: "IA entiende y explica el código"
+    hybrid_search: "Búsqueda por intención, no sintaxis"
+
+solution_overview:
+  what_is_squit: |
+    SQUIT ("SQL Quit") es un sistema que transforma código SQL legacy en conocimiento
+    democratizado. Usa IA para:
+    1. Estructurar código caótico en chunks clasificados
+    2. Generar embeddings semánticos que capturan intención
+    3. Permitir búsqueda híbrida por lenguaje natural
+    4. Auto-generar documentación y análisis de impacto
+  
+  key_capabilities:
+    structuring:
+      name: "Estructuración Inteligente"
+      description: "Ordena millones de líneas de código legacy"
+      features:
+        - "Clasificación semántica automática (8 tipos)"
+        - "Identificación de dominios de negocio (7 dominios)"
+        - "Chunking adaptativo según complejidad"
+        - "Extracción de dependencias y referencias"
+    
+    democratization:
+      name: "Democratización del Conocimiento"
+      description: "Hace el código accesible para todos"
+      features:
+        - "Búsqueda en lenguaje natural"
+        - "Resúmenes auto-generados de funcionalidad"
+        - "Análisis de impacto automático"
+        - "Documentación viva del codebase"
+    
+    hybrid_search:
+      name: "Búsqueda Híbrida por Intención"
+      description: "Encuentra código sin conocer sintaxis exacta"
+      features:
+        - "70% búsqueda vectorial semántica"
+        - "30% keywords tradicionales"
+        - "Filtros por dominio, tipo, complejidad"
+        - "Comprende sinónimos e intención"
+    
+    ai_comprehension:
+      name: "Comprensión con IA"
+      description: "IA explica qué hace el código y por qué"
+      features:
+        - "Embeddings de 768 dimensiones con Gemini"
+        - "Identificación de patrones de negocio"
+        - "Análisis de complejidad"
+        - "Sugerencias de modernización"
+
+use_cases:
+  understanding_legacy:
+    title: "Entender Código Legacy"
+    user: "Nuevo Desarrollador"
+    problem: "No entiendo qué hace este código de 5000 líneas"
+    solution: "SQUIT clasifica, resume y explica la funcionalidad automáticamente"
+    impact: "Onboarding de meses a semanas"
+  
+  finding_logic:
+    title: "Encontrar Lógica de Negocio"
+    user: "Desarrollador o Analista"
+    problem: "¿Dónde está implementada la regla de negocio X?"
+    solution: "Búsqueda semántica por intención en lenguaje natural"
+    impact: "De horas de búsqueda a minutos"
+  
+  impact_analysis:
+    title: "Análisis de Impacto"
+    user: "Arquitecto o Tech Lead"
+    problem: "¿Qué se rompe si modifico esta tabla?"
+    solution: "Análisis automático de dependencias y objetos afectados"
+    impact: "Cambios seguros con confianza"
+  
+  modernization:
+    title: "Planificación de Modernización"
+    user: "Engineering Manager"
+    problem: "¿Qué código es crítico refactorizar?"
+    solution: "Análisis de complejidad y patrones, priorización objetiva"
+    impact: "Decisiones basadas en datos"
+  
+  knowledge_sharing:
+    title: "Democratización del Conocimiento"
+    user: "Toda la Organización"
+    problem: "Conocimiento tribal en cabezas de expertos"
+    solution: "Base de conocimiento accesible y buscable para todos"
+    impact: "Conocimiento democratizado"
+
+architecture:
+  philosophy: "De Caos a Conocimiento Democratizado"
+  
+  data_flow:
+    input: "Código SQL Legacy (3.4M objetos sin documentar)"
+    processing:
+      - stage: "Clasificación Semántica"
+        action: "Identifica tipo, dominio, complejidad"
+      - stage: "Chunking Inteligente"
+        action: "Divide según complejidad manteniendo contexto"
+      - stage: "Embeddings con IA"
+        action: "Gemini genera vectores de 768 dims"
+      - stage: "Indexación Híbrida"
+        action: "Crea índice vectorial + keywords"
+    output: "Conocimiento Estructurado y Buscable"
+  
+  components:
+    bigquery_vector:
+      path: "app/bigquery_vector/"
+      role: "Motor de Estructuración y Democratización"
+      status: "✅ Production Ready"
+      responsibility: "Transforma caos en conocimiento estructurado"
+      key_files:
+        - "config.py: Configuración del sistema"
+        - "chunking_pipeline.py: Estructuración inteligente"
+        - "vector_search.py: Búsqueda híbrida por intención"
+        - "progress_tracker.py: Observabilidad y tracking"
+    
+    agentic_rag:
+      path: "app/agentic_rag/"
+      role: "Análisis Inteligente Multi-Agente"
+      status: "✅ Phase 1 Complete"
+      responsibility: "Análisis profundo y comprensión asistida por IA"
+    
+    squit_client:
+      path: "app/squit_client/"
+      role: "Cliente Base BigQuery"
+      status: "✅ Stable"
+      responsibility: "Acceso a datos legacy"
+
+democratization_features:
+  semantic_classification:
+    name: "Clasificación Semántica Automática"
+    purpose: "Ordenar el caos"
+    types:
+      - "stored_procedure: Procedimientos con lógica de negocio"
+      - "function: Funciones reutilizables"
+      - "view: Vistas de consulta"
+      - "trigger: Triggers de eventos"
+      - "complex_query: Queries con múltiples JOINs"
+      - "ddl: Definiciones de estructura"
+      - "dml: Manipulación de datos"
+      - "simple_sql: Queries simples"
+    
+    domains:
+      - "ventas: Facturación, clientes, pedidos"
+      - "inventario: Stock, almacenes, movimientos"
+      - "finanzas: Pagos, cuentas, balances"
+      - "produccion: Manufactura, órdenes"
+      - "logistica: Envíos, rutas, entregas"
+      - "recursos_humanos: Empleados, nómina"
+      - "compras: Proveedores, órdenes"
+  
+  intelligent_chunking:
+    name: "División Inteligente del Código"
+    purpose: "Hacer comprensible lo incomprensible"
+    strategies:
+      single: "< 15K chars: Chunk único completo"
+      medium: "15K-50K: 200 líneas/chunk con 20% traslape"
+      large: "50K-1M: 250 líneas/chunk con 20% traslape"
+      mega: "> 1M chars: 400 líneas/chunk con 20% traslape"
+    benefit: "Código de 10K líneas dividido en chunks comprensibles"
+  
+  hybrid_search:
+    name: "Búsqueda Híbrida por Intención"
+    purpose: "Encontrar sin conocer sintaxis exacta"
+    approach: "70% vectorial semántica + 30% keywords"
+    examples:
+      - query: "autenticación usuarios permisos"
+        finds: "Código de login, validación, roles (aunque use términos diferentes)"
+      - query: "cálculo impuestos facturación"
+        finds: "Lógica fiscal y billing (comprende intención)"
+      - query: "actualización inventario almacenes"
+        finds: "Movimientos de stock (entiende sinónimos)"
+  
+  auto_documentation:
+    name: "Documentación Auto-Generada"
+    purpose: "Eliminar la documentación desactualizada"
+    generates:
+      - "Resúmenes de funcionalidad por objeto"
+      - "Identificación de dependencias"
+      - "Análisis de complejidad"
+      - "Mapas de dominio de negocio"
+      - "Patrones comunes del codebase"
+
+metrics_democratization:
+  before_squit:
+    finding_logic: "2-4 horas de búsqueda manual"
+    understanding_code: "Días leyendo código + preguntas a expertos"
+    onboarding: "3-6 meses para ser productivo"
+    dependencies: "Manual, días de análisis"
+    documentation: "Desactualizada o inexistente"
+    knowledge_access: "5-10 expertos en la org"
+  
+  after_squit:
+    finding_logic: "< 2 minutos con búsqueda semántica"
+    understanding_code: "Minutos con resumen IA"
+    onboarding: "2-4 semanas acelerado"
+    dependencies: "Automático, segundos"
+    documentation: "Auto-generada y actualizada"
+    knowledge_access: "Toda la organización"
+  
+  improvement:
+    speed: "60-120x más rápido encontrar lógica"
+    onboarding: "6-12x más rápido integración"
+    access: "Conocimiento democratizado para todos"
+
+configuration:
+  environment_variables:
+    google_cloud:
+      - "GOOGLE_CLOUD_PROJECT: Proyecto con código SQL legacy"
+      - "GOOGLE_APPLICATION_CREDENTIALS: Service account key"
+    
+    ai_services:
+      - "GEMINI_API_KEY: Para embeddings y agentes"
+      - "GEMINI_CHAT_MODEL: gemini-2.5-flash (SIEMPRE usar este modelo)"
+      - "GEMINI_EMBEDDING_MODEL: gemini-embedding-001 (768 dims)"
+    
+    bigquery:
+      - "BIGQUERY_DATASET: Dataset con objetos SQL"
+      - "BIGQUERY_SOURCE_TABLE: Tabla con código legacy"
+  
+  input_requirements:
+    table: "sql_objects_code"
+    required_columns:
+      - "server: Servidor origen"
+      - "database: Base de datos"
+      - "object_name: Nombre del objeto"
+      - "object_type: Tipo (PROCEDURE, VIEW, etc.)"
+      - "sql_code: Código SQL completo"
+    
+    scale: "Optimizado para millones de objetos"
+
+scripts_democratization:
+  structuring:
+    - name: "run_bigquery_pipeline.py"
+      purpose: "Estructurar código legacy completo"
+      democratizes: "Ordena caos en conocimiento clasificado"
+      usage: "python scripts/run_bigquery_pipeline.py"
+  
+  searching:
+    - name: "bigquery_search_chunks.py"
+      purpose: "Buscar código por intención"
+      democratizes: "Encuentra sin conocer sintaxis exacta"
+      modes:
+        - "demo: Ejemplos de búsquedas semánticas"
+        - "interactive: Pregunta libremente en lenguaje natural"
+        - "patterns: Análisis de patrones del codebase"
+  
+  monitoring:
+    - name: "monitor_pipeline.py"
+      purpose: "Monitorear estructuración en tiempo real"
+      democratizes: "Transparencia del proceso"
+
+success_stories:
+  developer_onboarding:
+    before: "4 meses leyendo código + shadowing expertos"
+    after: "3 semanas con SQUIT guiando el aprendizaje"
+    quote: "Los nuevos devs contribuyen desde el día uno"
+  
+  finding_business_logic:
+    before: "Semanas buscando manualmente en 3.4M objetos"
+    after: "Minutos con búsqueda semántica"
+    quote: "SQUIT nos muestra la lógica en segundos con contexto"
+  
+  modernization_planning:
+    before: "Decisiones basadas en intuición"
+    after: "Análisis objetivo de complejidad y uso"
+    quote: "Priorizamos refactoring con datos reales"
+
+philosophy:
+  name: "SQL Quit - Democratización del Conocimiento Legacy"
+  
+  meaning_of_quit:
+    - "Sal del código incomprensible"
+    - "Libérate de la dependencia de expertos"
+    - "Deja atrás el conocimiento tribal"
+    - "Democratiza el acceso al conocimiento"
+  
+  core_beliefs:
+    - "El código legacy no debería ser una barrera"
+    - "El conocimiento debe estar democratizado"
+    - "La IA puede hacer el código comprensible"
+    - "La búsqueda debe ser por intención"
+    - "La documentación debe auto-generarse"
+    - "El onboarding debe ser semanas, no meses"
+  
+  vision: |
+    Un mundo donde cualquier desarrollador, analista o manager puede
+    entender y trabajar con código legacy sin depender de expertos.
+    
+    Donde el conocimiento de décadas de desarrollo esté estructurado,
+    documentado y accesible para toda la organización.
+    
+    Donde "SQL Quit" significa liberarse del código críptico y
+    democratizar el acceso al conocimiento empresarial.
+
+contact:
+  team: "Grupo DeAcero"
+  email: "ktouma@deacero.com"
+  mission: "Democratizar conocimiento legacy"
+  tagline: "SQL Quit - Libérate del código críptico"

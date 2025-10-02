@@ -1,0 +1,133 @@
+# Docker Compose para Weaviate
+# Configuración para el sistema Agentic RAG
+
+services:
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.27.0
+    container_name: weaviate-agentic-rag
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50051:50051"  # gRPC endpoint
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'text2vec-openai'
+      ENABLE_MODULES: 'text2vec-openai,generative-openai'
+      CLUSTER_HOSTNAME: 'node1'
+      # Gemini configuration  
+      GOOGLE_API_KEY: ${GEMINI_API_KEY:-}
+      # Performance optimization
+      LIMIT_RESOURCES: 'false'
+      # Logging
+      LOG_LEVEL: 'info'
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    networks:
+      - agentic-rag-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    # Resource limits para desarrollo
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  # Servicio principal SQUIT con Agentic RAG
+  squit-agentic:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: squit-agentic-rag
+    depends_on:
+      weaviate:
+        condition: service_healthy
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
+      - PYTHONUNBUFFERED=1
+      - GRPC_VERBOSITY=ERROR
+      - GLOG_minloglevel=2
+      # Weaviate configuration
+      - WEAVIATE_URL=http://weaviate:8080
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      # Agent configuration
+      - AGENT_LOG_LEVEL=INFO
+      - ENABLE_AGENTIC_RAG=true
+    volumes:
+      - ./credentials.json:/tmp/credentials.json:ro
+      - ./app:/app
+      - ./scripts:/app/scripts
+      - agentic_logs:/var/log/squit
+    networks:
+      - agentic-rag-network
+    command: python3 examples/agentic_demo.py
+    restart: unless-stopped
+
+  # Jupyter para desarrollo de agentes
+  jupyter-agentic:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: jupyter-agentic-dev
+    depends_on:
+      - weaviate
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
+      - WEAVIATE_URL=http://weaviate:8080
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - JUPYTER_ENABLE_LAB=yes
+    volumes:
+      - ./credentials.json:/tmp/credentials.json:ro
+      - ./app:/home/jovyan/work/app
+      - ./docs:/home/jovyan/work/docs
+      - jupyter-agentic-data:/home/jovyan/work/data
+    ports:
+      - "8888:8888"
+    networks:
+      - agentic-rag-network
+    profiles:
+      - dev
+    command: start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''
+
+  # Monitor y métricas (opcional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-agentic
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - agentic-rag-network
+    profiles:
+      - monitoring
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+
+networks:
+  agentic-rag-network:
+    driver: bridge
+    name: agentic-rag-network
+
+volumes:
+  weaviate_data:
+    driver: local
+  agentic_logs:
+    driver: local
+  jupyter-agentic-data:
+    driver: local
+  prometheus_data:
+    driver: local

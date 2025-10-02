@@ -1,0 +1,482 @@
+# ============================================================================
+# SQUIT - BigQuery Vector System
+# Configuración de .gitignore
+# ============================================================================
+
+# ============================================================================
+# 🔐 CREDENCIALES Y SECRETS (CRÍTICO)
+# ============================================================================
+
+# Variables de ambiente
+.env
+.env.*
+!.env.example
+!.env.template
+*.env
+
+# Credenciales Google Cloud
+credentials.json
+.config/credentials.json
+service-account*.json
+*-credentials.json
+!.config/credentials.example.json
+!**/credentials.example.json
+key.json
+keyfile.json
+gcloud-*.json
+*-key.json
+
+# API Keys y tokens
+.api_keys
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+.secrets/
+secrets/
+
+# Configuración con credenciales
+config.local.yml
+config.local.yaml
+config.*.local.yml
+
+# ============================================================================
+# 🐍 PYTHON
+# ============================================================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+pipenv/
+poetry.lock
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+!docs/*.ipynb
+!examples/*.ipynb
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# ============================================================================
+# 📊 LOGS Y ARCHIVOS TEMPORALES
+# ============================================================================
+
+# Logs generales
+*.log
+logs/
+*.log.*
+log_*.txt
+pipeline_*.log
+execution_*.log
+
+# Archivos temporales
+tmp/
+temp/
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Archivos de swap
+*.swp
+*.swo
+*~
+.*.swp
+
+# Dumps y backups
+*.dump
+*.bak
+*.backup
+*.old
+
+# ============================================================================
+# 🗄️ BASES DE DATOS Y DATOS
+# ============================================================================
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Datos locales y cache
+data/local/
+cache/
+.cache/
+*.cache
+
+# Archivos de datos grandes
+*.csv
+*.parquet
+*.avro
+*.pkl
+*.pickle
+!examples/*.csv
+!tests/fixtures/*.csv
+!data/*.example.csv
+!data/catalog.example.csv
+
+# BigQuery exports
+bigquery_exports/
+bq_exports/
+*.jsonl
+*.ndjson
+
+# ============================================================================
+# 🔧 IDEs Y EDITORES
+# ============================================================================
+
+# VSCode
+.vscode/
+*.code-workspace
+.history/
+
+# PyCharm / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Cursor
+.cursor/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# ============================================================================
+# 🐳 DOCKER
+# ============================================================================
+
+# Docker override files
+docker-compose.override.yml
+docker-compose.local.yml
+.dockerignore.local
+
+# Docker volumes data
+volumes/
+docker-volumes/
+
+# ============================================================================
+# 🖥️ SISTEMA OPERATIVO
+# ============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+.nfs*
+
+# ============================================================================
+# 📝 DOCUMENTOS INTERNOS (NO COMMITEAR)
+# ============================================================================
+
+# Documentación interna y notas privadas
+docs/internal/
+docs/private/
+NOTES_PRIVATE.md
+TODO_PRIVATE.md
+SCRATCH.md
+
+# Reportes y análisis locales
+reports/local/
+analysis/local/
+*.local.md
+
+# Diagramas y assets pesados
+*.pdf
+*.psd
+*.ai
+!docs/assets/*.pdf
+
+# Presentaciones
+*.pptx
+*.ppt
+*.key
+
+# ============================================================================
+# 📦 DEPENDENCIAS Y BUILD
+# ============================================================================
+
+# Node modules (si aplica)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp.*
+.yarn/
+
+# Package managers
+.npm
+.yarn-integrity
+package-lock.json
+yarn.lock
+
+# Build artifacts
+*.whl
+*.tar.gz
+*.zip
+!requirements.txt
+
+# ============================================================================
+# 🧪 TESTING Y DESARROLLO
+# ============================================================================
+
+# Test outputs
+test-results/
+test-output/
+*.test.log
+
+# Coverage
+.coverage
+htmlcov/
+coverage/
+
+# Benchmark results
+benchmarks/results/
+*.benchmark
+
+# ============================================================================
+# 🔬 ML Y DATA SCIENCE
+# ============================================================================
+
+# Model files
+*.h5
+*.pkl
+*.joblib
+*.model
+models/local/
+checkpoints/
+
+# Tensorboard
+runs/
+tensorboard/
+
+# Weights & Biases
+wandb/
+
+# MLflow
+mlruns/
+
+# ============================================================================
+# 🌐 WEAVIATE Y VECTOR DBs
+# ============================================================================
+
+# Weaviate data
+weaviate-data/
+.weaviate/
+
+# Vector indices
+*.index
+*.faiss
+
+# ============================================================================
+# 📊 BIGQUERY SPECIFIC
+# ============================================================================
+
+# Query results temporales
+query_results/
+bq_results/
+
+# Schema dumps locales
+schema_dumps/
+*.schema.json
+
+# Pipeline checkpoints locales (los de BigQuery están en BQ)
+.checkpoints/
+checkpoints/local/
+
+# ============================================================================
+# 🚀 DEPLOYMENT Y CI/CD
+# ============================================================================
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Kubernetes
+*.kubeconfig
+
+# Fly.io (si aplica desde otros proyectos)
+.fly/
+
+# ============================================================================
+# 📎 OTROS
+# ============================================================================
+
+# Archivos comprimidos
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Archivos de respaldo de editores
+*.bak
+*.gho
+*.ori
+*.orig
+*.save
+
+# Python eggs
+*.egg
+*.egg-info
+
+# Profiling data
+*.prof
+*.lprof
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# ============================================================================
+# PROYECTO ESPECÍFICO
+# ============================================================================
+
+# Scripts de prueba locales
+scripts/test_local_*.py
+scripts/debug_*.py
+
+# Configuraciones locales de desarrollo
+config.local.py
+settings.local.py
+
+# Archivos de experimentación
+experiments/
+playground/
+sandbox/
+
+# Datos de ejemplo grandes (mantener pequeños)
+examples/data/large/
+examples/data/*.parquet
+
+# ============================================================================
+# FIN
+# ============================================================================

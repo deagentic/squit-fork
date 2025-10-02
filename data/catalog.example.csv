@@ -1,0 +1,8 @@
+application_name,database_name,business_domain,description
+VENTAS_APP,VentasDB,ventas,Sistema de gestión de ventas y cotizaciones
+INVENTARIO_APP,InventarioDB,inventario,Control de inventario y almacenes
+KAYAK_APP,LogisticaDB,logistica,Sistema Kayak de fechas de embarque y entrega
+FINANZAS_APP,FinanzasDB,finanzas,Gestión financiera y contabilidad
+PRODUCCION_APP,ProduccionDB,produccion,Control de producción y manufactura
+COMPRAS_APP,ComprasDB,compras,Gestión de compras y proveedores
+RRHH_APP,RecursosHumanosDB,recursos_humanos,Recursos humanos y nómina

@@ -1,0 +1,41 @@
+# Dockerfile para desarrollo con Jupyter
+FROM quay.io/jupyter/scipy-notebook:python-3.12
+
+# Cambiar a usuario root para instalar dependencias
+USER root
+
+# Instalar dependencias del sistema
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Volver al usuario jovyan
+USER jovyan
+
+# Establecer directorio de trabajo
+WORKDIR /home/jovyan/work
+
+# Copiar requirements e instalar dependencias
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Instalar extensiones útiles de Jupyter
+RUN pip install --no-cache-dir \
+    jupyterlab-git \
+    jupyterlab-lsp \
+    python-lsp-server[all] \
+    jupyterlab-code-formatter \
+    black \
+    isort
+
+# Copiar código fuente
+COPY app/ ./app/
+COPY docs/ ./docs/
+
+# Variables de entorno
+ENV PYTHONPATH=/home/jovyan/work \
+    GOOGLE_APPLICATION_CREDENTIALS=/home/jovyan/work/credentials.json
+
+# El comando por defecto lo maneja la imagen base
