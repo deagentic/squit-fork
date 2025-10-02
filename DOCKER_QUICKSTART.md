@@ -1,6 +1,6 @@
-# 🚀 Quick Start con Docker
+# 🚀 Docker Quick Start - SQUIT
 
-**SQUIT en un comando: `make squit`**
+**Ejecuta SQUIT en 2 comandos con Docker.**
 
 ---
 
@@ -9,105 +9,108 @@
 ### 1. Setup (Solo primera vez)
 
 ```bash
-# 1. Configurar variables
+# a) Configurar variables
 cp .env.template .env
-nano .env  # Agregar GOOGLE_CLOUD_PROJECT, GEMINI_API_KEY
+nano .env  # Agregar: GOOGLE_CLOUD_PROJECT, GEMINI_API_KEY
 
-# 2. Copiar credentials
+# b) Copiar credentials
 cp ~/Downloads/tu-proyecto.json .config/credentials.json
 
-# 3. Copiar catálogo (opcional)
+# c) Copiar catálogo (opcional - 280 apps)
 cp tu-catalogo.csv data/catalogo.csv
 ```
 
-### 2. Ejecutar
+---
 
-**Primera vez (construir imagen):**
+### 2. Construir Imagen
+
 ```bash
 make squit-rebuild
 ```
 
-**Siguientes veces:**
-```bash
-make squit
+**Qué hace:**
+- Construye imagen Docker con Python 3.12
+- Instala google-adk 1.15.1 + todas las dependencias
+- Configura volúmenes persistentes
+- Tiempo: ~1-2 min primera vez
+
+**Salida esperada:**
+```
+Reconstruyendo CLI de SQUIT (sin cache)...
+[+] Building 77.7s (18/18) FINISHED
+✔ squit-squit-cli Built
+
+Iniciando CLI...
+squit[1]> _  ← Cursor esperando tu input
 ```
 
-**Eso es todo.** El sistema:
-- Construye imagen con google-adk 1.15.1 (primera vez: ~1 min)
-- Monta tu configuración (.config/, data/, .env)
-- Inicia CLI interactivo
-- Preserva todo entre ejecuciones
-
-**⚠️ IMPORTANTE:** Primera vez ejecutar `make squit-rebuild` para forzar build completo.
+---
 
 ### 3. Usar
 
 ```
 squit[1]> que hace kayak?
-squit[2]> explicame AgAsignaFechasKayakProc
-squit[3]> exit
+
+"Kayak" es un sistema de gestión de fechas...
+Los principales stored procedures son:
+- AgAsignaFechasKayakProc
+...
+
+squit[2]> exit
 ```
 
----
-
-## 📁 Archivos que se Preservan
-
-✅ `.config/credentials.json` - Tu service account  
-✅ `data/catalogo.csv` - 280 aplicaciones  
-✅ `.env` - Variables de entorno  
-✅ Datos generados - Volumen Docker persistente
-
-**Nada se pierde entre ejecuciones.**
+**Salir:** Escribe `exit` o presiona `Ctrl+C`
 
 ---
 
-## 🎯 Comandos Útiles
+## 📊 Siguientes Ejecuciones
 
 ```bash
-# Primera vez (IMPORTANTE)
-make squit-rebuild
-
-# Ejecutar CLI (siguientes veces)
+# Simplemente ejecutar (usa imagen ya construida)
 make squit
 
-# Limpiar todo y empezar de cero
-make squit-clean
-make squit-rebuild
-
-# Ver ayuda
-make help
-
-# Ver logs (en otra terminal)
-docker logs -f squit-cli
-
-# Detener (Ctrl+C en el terminal donde corre)
+# Inicia inmediatamente (~1 seg)
+squit[1]> _
 ```
 
 ---
 
-## ✅ Checklist Pre-ejecución
+## 🔧 Comandos Disponibles
 
-- [ ] Docker instalado y corriendo
-- [ ] `.env` configurado
-- [ ] `.config/credentials.json` copiado
-- [ ] (Opcional) `data/catalogo.csv` copiado
+| Comando | Cuándo Usar | Tiempo |
+|---------|-------------|--------|
+| `make squit` | Uso normal | <1 seg |
+| `make squit-rebuild` | Primera vez o después de actualizar | 1-2 min |
+| `make squit-clean` | Limpiar todo y empezar de cero | <5 seg |
+| `make help` | Ver todos los comandos | - |
 
 ---
 
-## 🆘 Problemas Comunes
+## 🐛 Problemas Comunes
 
-**"Docker daemon not running"**
+### "Docker daemon not running"
+
 ```bash
 # macOS: Abrir Docker Desktop
 # Linux: sudo systemctl start docker
 ```
 
-**"Permission denied"**
+### "No module named 'deprecated'"
+
 ```bash
-chmod 600 .config/credentials.json
+make squit-clean
+make squit-rebuild
 ```
 
-**"Cannot find .env"**
+### Prompt `squit[1]>` no aparece
+
+```bash
+# Asegúrate de usar make squit-rebuild (no make squit-build)
+make squit-rebuild
+```
+
+### "Cannot find .env"
+
 ```bash
 cp .env.template .env
 nano .env
@@ -115,14 +118,71 @@ nano .env
 
 ---
 
-## 📚 Más Información
+## ✅ Checklist Pre-ejecución
 
-- **Guía completa:** [docs/usage/DOCKER.md](docs/usage/DOCKER.md)
-- **README:** [README.md](README.md)
-- **Docs:** [docs/INDEX.md](docs/INDEX.md)
+- [ ] Docker Desktop instalado y corriendo
+- [ ] `.env` configurado (GOOGLE_CLOUD_PROJECT, GEMINI_API_KEY)
+- [ ] `.config/credentials.json` copiado
+- [ ] (Opcional) `data/catalogo.csv` copiado
+- [ ] Ejecutado `make squit-rebuild` (primera vez)
 
 ---
 
-**¿Primera vez con Docker?** Ver: https://docs.docker.com/get-started/
+## 📁 Archivos que se Preservan
 
-**Creado por Karim Touma | Grupo DeAcero**
+Entre ejecuciones, el sistema preserva:
+
+✅ `.config/credentials.json` - Tu service account  
+✅ `data/catalogo.csv` - 280 aplicaciones  
+✅ `.env` - Variables de entorno  
+✅ Historial de queries - En volumen `squit-data`
+
+**Nada se pierde.** Tus configuraciones están seguras.
+
+---
+
+## 🎯 Comandos Esenciales
+
+```bash
+# Primera vez
+make squit-rebuild
+
+# Uso diario
+make squit
+
+# Si algo falla
+make squit-clean
+make squit-rebuild
+
+# Ver ayuda
+make help
+```
+
+---
+
+## 📚 Más Información
+
+- **Guía completa:** [docs/usage/DOCKER.md](docs/usage/DOCKER.md) (exhaustiva, 800+ líneas)
+- **Instrucciones detalladas:** [INSTRUCCIONES_DOCKER.md](INSTRUCCIONES_DOCKER.md)
+- **README principal:** [README.md](README.md)
+- **Índice de docs:** [docs/INDEX.md](docs/INDEX.md)
+
+---
+
+## 💡 Por Qué `make squit` en Lugar de `python3 scripts/squit.py`
+
+| Aspecto | Docker | Local |
+|---------|--------|-------|
+| Setup | Automático | Manual |
+| Dependencias | Incluidas | Instalar manualmente |
+| Aislamiento | Total | Contamina sistema |
+| Portabilidad | 100% | Depende de OS |
+| Limpieza | Fácil | Complicado |
+
+**Docker = Simplicidad + Robustez + Reproducibilidad**
+
+---
+
+**Creado por:** Karim Touma | Grupo DeAcero  
+**Última actualización:** 2025-10-02  
+**Versión:** 1.0.0

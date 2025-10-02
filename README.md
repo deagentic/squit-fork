@@ -89,17 +89,45 @@ print(f'   Credenciales: {os.getenv(\"GOOGLE_APPLICATION_CREDENTIALS\")}')
 
 ### 5. Ejecutar el Asistente
 
-**Opción A: Con Docker** (Recomendado - Aislado, sin contaminar sistema)
+#### **Opción A: Con Docker** 🐳 (Recomendado - Aislado y Reproducible)
+
+**Primera vez (construir imagen):**
+```bash
+make squit-rebuild
+```
+
+**Siguientes veces:**
 ```bash
 make squit
 ```
 
-**Opción B: Directamente con Python**
+**Ventajas de Docker:**
+- ✅ **Aislamiento total** - No contamina tu Python local
+- ✅ **Dependencias incluidas** - Todo pre-instalado (google-adk 1.15.1, etc.)
+- ✅ **Reproducible** - Funciona igual en cualquier máquina
+- ✅ **Configuración persistente** - Tus archivos se preservan (.config/, data/)
+- ✅ **Limpieza fácil** - `docker rm` y no queda nada
+
+**Comandos útiles:**
+```bash
+make squit          # Ejecutar CLI interactivo
+make squit-rebuild  # Reconstruir imagen completa (si cambió código)
+make squit-clean    # Limpiar todo (imágenes, contenedores, volúmenes)
+make help           # Ver todos los comandos disponibles
+```
+
+#### **Opción B: Directamente con Python** 🐍
+
 ```bash
 python3 scripts/squit.py
 ```
 
-💡 **Tip:** `make squit` ejecuta todo en Docker con configuración persistente automática.
+**Cuándo usar:**
+- Desarrollo rápido
+- Debugging
+- Ya tienes Python 3.12+ y dependencias instaladas
+
+💡 **Recomendación:** Usa Docker (`make squit`) para producción y uso diario.
 
 ```
     ███████╗ ██████╗ ██╗   ██╗██╗████████╗
@@ -130,24 +158,53 @@ AgAsignaFechasKayakProc asigna fechas estimadas...
 squit[3]> exit
 ```
 
-### 🐳 Ejecución con Docker
+### 🐳 Detalles de Ejecución con Docker
 
-```bash
-# Un comando, todo incluido
-make squit
+**Arquitectura del Sistema Dockerizado:**
 
-# Primera vez construye imagen (~2-3 min)
-# Siguientes veces inicia inmediatamente
-# Toda tu configuración se preserva automáticamente
+```
+┌─────────────────────────────────────────────────────┐
+│ make squit                                          │
+│  ↓                                                   │
+│ docker compose --profile cli run --rm squit-cli     │
+│  ↓                                                   │
+│ ┌───────────────────────────────────────┐           │
+│ │ Container: squit-cli                  │           │
+│ │ ─────────────────────────────────────│           │
+│ │ Imagen: squit-squit-cli:latest        │           │
+│ │ Base: python:3.12-slim-bookworm       │           │
+│ │ ─────────────────────────────────────│           │
+│ │ Dependencias instaladas:              │           │
+│ │  • google-adk: 1.15.1                 │           │
+│ │  • google-genai: 1.40.0               │           │
+│ │  • google-cloud-bigquery: 3.38.0      │           │
+│ │  • deprecated: 1.2.18                 │           │
+│ │  • + 80 librerías más                 │           │
+│ │ ─────────────────────────────────────│           │
+│ │ Volúmenes montados (del host):        │           │
+│ │  .config/   → /workspace/.config/  ✅│           │
+│ │  data/      → /workspace/data/     ✅│           │
+│ │  .env       → /workspace/.env      ✅│           │
+│ │  app/       → /workspace/app/      🔒│           │
+│ │  scripts/   → /workspace/scripts/  🔒│           │
+│ │ ─────────────────────────────────────│           │
+│ │ Comando ejecutado:                    │           │
+│ │  python3 scripts/squit.py             │           │
+│ └───────────────────────────────────────┘           │
+└─────────────────────────────────────────────────────┘
+
+✅ = Persistente (lectura/escritura)
+🔒 = Protegido (solo lectura)
 ```
 
-**Ventajas:**
-- ✅ Aislado del sistema (no contamina)
-- ✅ Dependencias incluidas
-- ✅ Configuración persistente (.config/, data/, .env)
-- ✅ Reproducible en cualquier máquina
+**¿Por qué `docker compose run` en lugar de `up`?**
 
-Ver guía completa: [docs/usage/DOCKER.md](docs/usage/DOCKER.md)
+- `docker compose up` → Para servicios daemon (background)
+- `docker compose run` → Para comandos interactivos (TTY completo)
+
+El CLI necesita **interactividad completa** (leer input del usuario), por eso usamos `run --rm`.
+
+**Comandos completos documentados:** [docs/usage/DOCKER.md](docs/usage/DOCKER.md)
 ```
 
 ---

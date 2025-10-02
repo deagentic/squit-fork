@@ -75,11 +75,15 @@ docs/
   - Context caching + few-shot learning
   - **CLI**: `make squit` (Docker) o `python3 scripts/squit.py`
 
-- **[Docker Guide](usage/DOCKER.md)** 🐳 **EJECUCIÓN CONTAINERIZADA**
-  - Uso con Docker (recomendado)
-  - Comando: `make squit`
+- **[Docker Guide](usage/DOCKER.md)** 🐳 **EJECUCIÓN CONTAINERIZADA** (1148 líneas)
+  - **Guía exhaustiva y técnica**
+  - Arquitectura completa del sistema Docker
+  - Explicación de `docker compose run` vs `up`
+  - Multi-stage build detallado
+  - Troubleshooting completo
+  - Optimizaciones y performance
+  - Comando principal: `make squit`
   - Configuración persistente automática
-  - Aislamiento completo del sistema
 
 - **[API Reference](usage/API.md)**
   - APIs de búsqueda y análisis
