@@ -106,6 +106,11 @@ docs/
   - Weaviate Semantic Memory
   - Roadmap futuro
 
+- **[MCP Roadmap](development/MCP_ROADMAP.md)** 🆕
+  - Model Context Protocol implementation
+  - Integración con Claude Desktop, Cursor, etc.
+  - Tools extensibles para IDEs
+
 - **[Context Awareness Fix](development/CONTEXT_AWARENESS_FIX.md)**
   - Fix de interpretación contextual
   - System prompt mejorado
