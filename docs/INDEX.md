@@ -73,13 +73,25 @@ docs/
   - MasterAgent + agentes especializados
   - Memoria conversacional multi-turn
   - Context caching + few-shot learning
-  - **CLI**: `python3 scripts/squit.py`
+  - **CLI**: `make squit` (Docker) o `python3 scripts/squit.py`
+
+- **[Docker Guide](usage/DOCKER.md)** 🐳 **EJECUCIÓN CONTAINERIZADA**
+  - Uso con Docker (recomendado)
+  - Comando: `make squit`
+  - Configuración persistente automática
+  - Aislamiento completo del sistema
 
 - **[API Reference](usage/API.md)**
   - APIs de búsqueda y análisis
   - Endpoints de BigQuery Vector Search
   - Catalog Enricher API
   - Query Logger API
+
+- **[API Configuration](usage/API_CONFIG.md)**
+  - Guía completa de configuración
+  - Variables de entorno
+  - Rutas y archivos
+  - Troubleshooting
 
 - **[Examples](usage/EXAMPLES.md)**
   - Ejemplos prácticos de uso
@@ -225,12 +237,20 @@ EMBEDDING_DIMENSIONS=768
 
 ### 1. Usuario Final (Solo Consultas)
 
+**Opción A: Con Docker (Recomendado)**
 ```bash
 # Setup inicial (una vez)
 cp .env.template .env
 # Editar .env con credenciales
 cp tu-proyecto-xxxxx.json .config/credentials.json
 
+# Usar SQUIT
+make squit
+```
+
+**Opción B: Directamente con Python**
+```bash
+# Setup inicial igual
 # Usar SQUIT
 python3 scripts/squit.py
 ```

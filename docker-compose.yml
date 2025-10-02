@@ -39,6 +39,36 @@ services:
       start_period: 40s
 
   # Servicio opcional para desarrollo con Jupyter
+  # CLI interactivo de SQUIT
+  squit-cli:
+    build:
+      context: .
+      dockerfile: Dockerfile.cli
+    container_name: squit-cli
+    env_file:
+      - .env
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=.config/credentials.json
+      - PYTHONUNBUFFERED=1
+      - GRPC_VERBOSITY=ERROR
+      - GLOG_minloglevel=2
+    volumes:
+      # Configuración (lectura/escritura para persistencia)
+      - ./.config:/workspace/.config:rw
+      - ./data:/workspace/data:rw
+      - ./.env:/workspace/.env:ro
+      # Código (solo lectura)
+      - ./app:/workspace/app:ro
+      - ./scripts:/workspace/scripts:ro
+      # Persistencia de datos generados
+      - squit-data:/workspace/.squit
+    stdin_open: true  # Modo interactivo
+    tty: true         # Terminal pseudo-TTY
+    networks:
+      - squit-network
+    profiles:
+      - cli
+
   squit-dev:
     build:
       context: .
@@ -70,3 +100,6 @@ networks:
 volumes:
   jupyter-data:
     driver: local
+  squit-data:
+    driver: local
+    name: squit-persistent-data

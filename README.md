@@ -88,9 +88,18 @@ print(f'   Credenciales: {os.getenv(\"GOOGLE_APPLICATION_CREDENTIALS\")}')
 ```
 
 ### 5. Ejecutar el Asistente
+
+**Opción A: Con Docker** (Recomendado - Aislado, sin contaminar sistema)
+```bash
+make squit
+```
+
+**Opción B: Directamente con Python**
 ```bash
 python3 scripts/squit.py
 ```
+
+💡 **Tip:** `make squit` ejecuta todo en Docker con configuración persistente automática.
 
 ```
     ███████╗ ██████╗ ██╗   ██╗██╗████████╗
@@ -117,6 +126,28 @@ squit[2]> explicame el primero que mencionaste
 ✅ Memoria mantiene contexto
 
 AgAsignaFechasKayakProc asigna fechas estimadas...
+
+squit[3]> exit
+```
+
+### 🐳 Ejecución con Docker
+
+```bash
+# Un comando, todo incluido
+make squit
+
+# Primera vez construye imagen (~2-3 min)
+# Siguientes veces inicia inmediatamente
+# Toda tu configuración se preserva automáticamente
+```
+
+**Ventajas:**
+- ✅ Aislado del sistema (no contamina)
+- ✅ Dependencias incluidas
+- ✅ Configuración persistente (.config/, data/, .env)
+- ✅ Reproducible en cualquier máquina
+
+Ver guía completa: [docs/usage/DOCKER.md](docs/usage/DOCKER.md)
 ```
 
 ---

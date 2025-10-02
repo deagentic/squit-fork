@@ -45,6 +45,32 @@ run-bg: ## Ejecutar aplicación en background
 	@echo "$(GREEN)Ejecutando aplicación en background...$(NC)"
 	$(DOCKER_COMPOSE) up -d $(PROD_SERVICE)
 
+squit: ## Ejecutar CLI interactivo de SQUIT en Docker
+	@echo "$(BLUE)  ███████╗ ██████╗ ██╗   ██╗██╗████████╗$(NC)"
+	@echo "$(BLUE)  ██╔════╝██╔═══██╗██║   ██║██║╚══██╔══╝$(NC)"
+	@echo "$(BLUE)  ███████╗██║   ██║██║   ██║██║   ██║   $(NC)"
+	@echo "$(BLUE)  ╚════██║██║▄▄ ██║██║   ██║██║   ██║   $(NC)"
+	@echo "$(BLUE)  ███████║╚██████╔╝╚██████╔╝██║   ██║   $(NC)"
+	@echo "$(BLUE)  ╚══════╝ ╚══▀▀═╝  ╚═════╝ ╚═╝   ╚═╝   $(NC)"
+	@echo ""
+	@echo "$(GREEN)Iniciando CLI interactivo de SQUIT...$(NC)"
+	@echo "$(YELLOW)Configuración persistente montada:$(NC)"
+	@echo "  • .config/credentials.json"
+	@echo "  • data/catalogo.csv (280 apps)"
+	@echo "  • .env variables"
+	@echo ""
+	@$(DOCKER_COMPOSE) --profile cli up squit-cli
+
+squit-build: ## Construir imagen del CLI de SQUIT
+	@echo "$(BLUE)Construyendo imagen CLI de SQUIT...$(NC)"
+	$(DOCKER) build -f Dockerfile.cli -t squit-cli:latest .
+
+squit-rebuild: ## Reconstruir y ejecutar CLI de SQUIT
+	@echo "$(BLUE)Reconstruyendo CLI de SQUIT...$(NC)"
+	@$(DOCKER_COMPOSE) --profile cli build squit-cli
+	@echo "$(GREEN)Iniciando CLI...$(NC)"
+	@$(DOCKER_COMPOSE) --profile cli up squit-cli
+
 dev: ## Iniciar entorno de desarrollo con Jupyter
 	@echo "$(GREEN)Iniciando entorno de desarrollo...$(NC)"
 	@echo "$(YELLOW)Jupyter Lab estará disponible en: http://localhost:8888$(NC)"
