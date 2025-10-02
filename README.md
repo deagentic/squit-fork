@@ -67,7 +67,27 @@ nano .env
 pip install -r requirements.txt
 ```
 
-### 4. Ejecutar el Asistente
+### 4. Verificar Configuración (Opcional)
+```bash
+# Ver configuración actual del sistema
+python3 -c "
+import sys
+from pathlib import Path
+sys.path.insert(0, 'app')
+
+from bigquery_vector.config import BigQueryVectorConfig
+from agentic_adk.catalog_enricher import CatalogEnricher
+import os
+
+print('✅ CONFIGURACIÓN ACTUAL:')
+print(f'   BigQuery: {BigQueryVectorConfig().PROJECT_ID}')
+print(f'   Dataset: {BigQueryVectorConfig().DATASET_ID}')
+print(f'   Catálogo: {len(CatalogEnricher().catalog_df)} apps')
+print(f'   Credenciales: {os.getenv(\"GOOGLE_APPLICATION_CREDENTIALS\")}')
+"
+```
+
+### 5. Ejecutar el Asistente
 ```bash
 python3 scripts/squit.py
 ```
@@ -97,6 +117,96 @@ squit[2]> explicame el primero que mencionaste
 ✅ Memoria mantiene contexto
 
 AgAsignaFechasKayakProc asigna fechas estimadas...
+```
+
+---
+
+## ⚙️ Configuración Actual del Sistema
+
+### 🔧 Configuración de Producción
+
+El sistema está configurado y funcionando con:
+
+#### 1. **Google Cloud Platform**
+```
+Proyecto: dfor-prj-dev
+Dataset: deacero_sql_objects
+Región: us-central1
+```
+
+**Tablas en BigQuery:**
+- `sql_objects_code` → ~3.4M objetos SQL (fuente)
+- `intelligent_chunks` → ~5-10M chunks procesados
+- `chunk_embeddings` → Vectores 768-dim (Gemini)
+- `query_history` → Analytics de queries
+
+#### 2. **Catálogo de Aplicaciones**
+```
+Ubicación: data/catalogo.csv
+Apps documentadas: 280
+Tamaño: 101 KB
+```
+
+Dominios de negocio incluidos:
+- Ventas, Inventario, Finanzas
+- Producción, Compras, Logística
+- Recursos Humanos
+
+#### 3. **Modelos de IA**
+
+**Agente Principal:**
+```
+Modelo: gemini-2.5-flash
+Temperature: 0.1 (determinista)
+Max tokens: 8000
+```
+
+**Embeddings:**
+```
+Modelo: gemini-embedding-001
+Dimensiones: 768
+Task type: CODE_RETRIEVAL_QUERY
+```
+
+#### 4. **Credenciales y Seguridad**
+```
+✅ Service Account: .config/credentials.json
+✅ API Keys: Configuradas en .env
+✅ .gitignore: Protección activa
+```
+
+**Permisos de Service Account:**
+- BigQuery Data Viewer
+- BigQuery Job User
+- BigQuery Data Editor
+
+#### 5. **Arquitectura del Sistema**
+
+```
+┌─────────────────┐
+│   Usuario CLI   │ (scripts/squit.py)
+└────────┬────────┘
+         │
+         v
+┌─────────────────┐
+│  MasterAgent    │ (Gemini 2.5 Flash)
+│  + Memoria      │ (Multi-turn conversacional)
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    │         │
+    v         v
+┌───────┐  ┌──────────────┐
+│Search │  │CatalogEnrich │
+│Agent  │  │(280 apps)    │
+└───┬───┘  └──────────────┘
+    │
+    v
+┌─────────────────┐
+│ BigQuery Vector │
+│ 3.4M objetos    │
+│ 768-dim embeds  │
+└─────────────────┘
 ```
 
 ---
@@ -423,3 +533,94 @@ Proyecto desarrollado en Grupo DeAcero para democratizar el acceso al conocimien
 ---
 
 **Hecho con ❤️ para democratizar el conocimiento legacy**
+
+---
+
+## 🔍 Verificar Estado del Sistema
+
+### Comando de Diagnóstico Rápido
+
+```bash
+# Script de diagnóstico completo
+python3 -c "
+import sys, os
+from pathlib import Path
+sys.path.insert(0, 'app')
+
+print('🔍 DIAGNÓSTICO RÁPIDO DEL SISTEMA\n')
+print('='*50)
+
+# 1. Archivos
+print('\n📁 Archivos de Configuración:')
+files = {
+    '.env': Path('.env'),
+    'credentials.json': Path('.config/credentials.json'),
+    'catalogo.csv': Path('data/catalogo.csv')
+}
+for name, path in files.items():
+    status = '✅' if path.exists() else '❌'
+    print(f'   {status} {name}: {path}')
+
+# 2. Variables
+print('\n🔐 Variables de Entorno:')
+env_vars = ['GOOGLE_CLOUD_PROJECT', 'GOOGLE_APPLICATION_CREDENTIALS', 'GEMINI_API_KEY']
+for var in env_vars:
+    val = os.getenv(var, '')
+    status = '✅' if val else '❌'
+    display = val[:20] + '...' if len(val) > 20 else val
+    print(f'   {status} {var}: {display}')
+
+# 3. Sistema
+print('\n⚙️  Sistema:')
+try:
+    from bigquery_vector.config import BigQueryVectorConfig
+    config = BigQueryVectorConfig()
+    print(f'   ✅ BigQuery: {config.PROJECT_ID}')
+    print(f'   ✅ Dataset: {config.DATASET_ID}')
+except Exception as e:
+    print(f'   ❌ Error: {e}')
+
+try:
+    from agentic_adk.catalog_enricher import CatalogEnricher
+    enricher = CatalogEnricher()
+    print(f'   ✅ Catálogo: {len(enricher.catalog_df)} aplicaciones')
+except Exception as e:
+    print(f'   ❌ Catálogo: {e}')
+
+print('\n' + '='*50)
+"
+```
+
+### Checklist de Configuración Actual
+
+- [x] **Proyecto GCP:** `dfor-prj-dev`
+- [x] **Dataset:** `deacero_sql_objects` (~3.4M objetos)
+- [x] **Credenciales:** `.config/credentials.json` ✅
+- [x] **Catálogo:** `data/catalogo.csv` (280 apps, 101 KB) ✅
+- [x] **Modelo IA:** `gemini-2.5-flash`
+- [x] **Embeddings:** 768-dim vectores
+- [ ] **API Key Gemini:** Configurar en `.env` si no está
+
+### Rutas Correctas Configuradas ✅
+
+```
+.config/credentials.json    ← Service Account (2.3 KB)
+data/catalogo.csv            ← 280 aplicaciones (101 KB)
+.env                         ← Variables de entorno
+```
+
+**Verificación automática:**
+- Sistema busca catálogo en `data/` automáticamente
+- Credenciales en `.config/` (ruta correcta configurada)
+- Variables de entorno cargadas desde `.env`
+
+---
+
+## 🔗 Enlaces Útiles
+
+- **Documentación:** [docs/INDEX.md](docs/INDEX.md) - Índice maestro
+- **Configuración:** [docs/usage/API_CONFIG.md](docs/usage/API_CONFIG.md) - Guía detallada
+- **Setup:** [docs/setup/BIGQUERY_VECTOR_COMPLETE.md](docs/setup/BIGQUERY_VECTOR_COMPLETE.md)
+- **Agentes:** [docs/usage/AGENTIC_ADK_GUIDE.md](docs/usage/AGENTIC_ADK_GUIDE.md)
+- **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md)
+
