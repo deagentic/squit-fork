@@ -1,6 +1,242 @@
 # SQUIT - API Reference
 
-## BigQueryClient
+Documentación completa de APIs y componentes del sistema SQUIT.
+
+**Última actualización:** 2025-10-02
+
+---
+
+## 📋 Tabla de Contenidos
+
+1. [MasterAgent (Sistema Principal)](#masteragent---sistema-principal)
+2. [CatalogEnricher](#catalogenricher---enriquecimiento-con-catálogo)
+3. [BigQueryVectorSearch](#bigqueryvectorsearch---búsquedas-vectoriales)
+4. [QueryLogger](#querylogger---analytics-de-queries)
+5. [BigQueryClient](#bigqueryclient---cliente-base)
+6. [Configuración](#configuración)
+
+---
+
+## MasterAgent - Sistema Principal
+
+### Clase Principal
+
+```python
+from agentic_adk import MasterAgent
+
+agent = MasterAgent()
+```
+
+Sistema agentico con Google ADK que orquesta búsquedas, análisis y explicaciones de código SQL.
+
+### Métodos
+
+#### `process(user_query: str, show_progress: bool = True) -> str`
+
+Procesa una query del usuario en lenguaje natural.
+
+**Parámetros:**
+- `user_query`: Pregunta o comando en lenguaje natural
+- `show_progress`: Mostrar indicadores de progreso (default: True)
+
+**Retorna:**
+- `str`: Respuesta procesada por el agente
+
+**Ejemplo:**
+```python
+agent = MasterAgent()
+response = agent.process("¿Dónde está la lógica de autenticación?")
+print(response)
+```
+
+#### `reset_conversation() -> None`
+
+Reinicia la memoria conversacional.
+
+**Ejemplo:**
+```python
+agent.reset_conversation()  # Limpia historial
+```
+
+### Agentes Especializados
+
+El MasterAgent coordina estos agentes internos:
+
+- **CodeSearchAgent**: Búsqueda semántica de código
+- **ExplanationAgent**: Explica código y genera resúmenes
+- **DependencyAgent**: Analiza dependencias e impacto
+
+### Tools Disponibles
+
+#### `vector_search_tool`
+
+Búsqueda híbrida (70% vectorial + 30% keywords) enriquecida con catálogo.
+
+**Parámetros internos:**
+- `query`: Término de búsqueda
+- `business_domains`: Filtros de dominio (opcional)
+- `object_types`: Filtros de tipo (opcional)
+- `limit`: Máximo de resultados (default: 10)
+
+#### `get_object_chunks_tool`
+
+Obtiene todos los chunks de un objeto SQL específico.
+
+**Parámetros internos:**
+- `parent_object_id`: ID del objeto (formato: server|database|schema|object_name)
+
+---
+
+## CatalogEnricher - Enriquecimiento con Catálogo
+
+### Clase Principal
+
+```python
+from agentic_adk.catalog_enricher import CatalogEnricher
+
+enricher = CatalogEnricher()
+```
+
+Enriquece búsquedas usando catálogo de 280+ aplicaciones de negocio.
+
+### Configuración
+
+**Archivo de catálogo:** `data/catalogo.csv` (root)
+
+El sistema busca automáticamente en:
+1. `data/catalogo.csv` ⭐ (prioridad 1)
+2. `data/catalog.csv` (fallback)
+3. `data/catalog.example.csv` (ejemplo)
+
+### Métodos
+
+#### `enrich_query(user_query: str) -> Dict[str, Any]`
+
+Enriquece una query con información del catálogo.
+
+**Parámetros:**
+- `user_query`: Query original del usuario
+
+**Retorna:**
+```python
+{
+    "original_query": str,           # Query original
+    "enriched_keywords": List[str],  # Keywords enriquecidas
+    "related_systems": List[str],    # Sistemas relacionados
+    "related_domains": List[str],    # Dominios de negocio
+    "search_hints": List[str],       # Hints contextuales
+    "catalog_matches": int           # Número de matches
+}
+```
+
+**Ejemplo:**
+```python
+enricher = CatalogEnricher()
+result = enricher.enrich_query("kayak")
+
+print(result["enriched_keywords"])  # ['kayak', 'KAY']
+print(result["related_systems"])    # ['KAY - Kayak']
+print(result["catalog_matches"])    # 1
+```
+
+#### `get_context_for_term(term: str) -> Optional[str]`
+
+Obtiene contexto de negocio para un término.
+
+**Retorna:**
+- `str`: Contexto textual o None si no hay matches
+
+---
+
+## BigQueryVectorSearch - Búsquedas Vectoriales
+
+### Clase Principal
+
+```python
+from bigquery_vector.vector_search import BigQueryVectorSearch
+
+search = BigQueryVectorSearch()
+```
+
+Sistema de búsqueda vectorial nativo en BigQuery.
+
+### Métodos
+
+#### `semantic_search(...) -> List[Dict[str, Any]]`
+
+Búsqueda semántica con embeddings.
+
+```python
+def semantic_search(
+    self,
+    query: str,
+    limit: int = 10,
+    business_domains: Optional[List[str]] = None,
+    object_types: Optional[List[str]] = None,
+    use_hybrid: bool = True
+) -> List[Dict[str, Any]]
+```
+
+**Parámetros:**
+- `query`: Query en lenguaje natural
+- `limit`: Máximo de resultados (default: 10)
+- `business_domains`: Filtrar por dominios (opcional)
+- `object_types`: Filtrar por tipos (opcional)
+- `use_hybrid`: Usar búsqueda híbrida (default: True)
+
+**Retorna:**
+- Lista de chunks con metadatos
+
+**Ejemplo:**
+```python
+search = BigQueryVectorSearch()
+results = search.semantic_search(
+    query="cálculo de comisiones",
+    business_domains=["ventas"],
+    limit=5
+)
+
+for chunk in results:
+    print(f"{chunk['object_name']}: {chunk['semantic_summary']}")
+```
+
+---
+
+## QueryLogger - Analytics de Queries
+
+### Clase Principal
+
+```python
+from agentic_adk.query_logger import QueryLogger
+
+logger = QueryLogger()
+```
+
+Registra queries y resultados en BigQuery para analytics.
+
+### Métodos
+
+#### `log_query(...) -> str`
+
+Registra una query y sus resultados.
+
+```python
+def log_query(
+    self,
+    user_query: str,
+    enriched_query: Dict[str, Any],
+    search_results: List[Dict[str, Any]],
+    agent_response: str,
+    metadata: Optional[Dict[str, Any]] = None
+) -> str
+```
+
+**Retorna:**
+- `str`: ID único del query log
+
+---
+
+## BigQueryClient - Cliente Base
 
 ### Clase Principal
 
@@ -350,3 +586,23 @@ except Exception as e:
 ### Columnas de Búsqueda por Defecto
 - `object_name`: Nombre del objeto SQL
 - `sql_code`: Código SQL completo
+
+
+---
+
+## Configuración
+
+Para documentación completa de configuración, variables de entorno, y archivos, ver:
+
+**[API_CONFIG.md](API_CONFIG.md)** - Guía completa de configuración
+
+Incluye:
+- Variables de entorno (.env)
+- Rutas de archivos (credentials.json, catalogo.csv)
+- Configuración de modelos IA
+- Validación y troubleshooting
+
+---
+
+**Última actualización:** 2025-10-02
+

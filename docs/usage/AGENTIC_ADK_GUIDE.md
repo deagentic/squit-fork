@@ -40,11 +40,25 @@ python scripts/demo_agentic_adk.py --validate
 ### 2. Configuración
 
 ```bash
-# Asegurar que .env tiene GEMINI_API_KEY
-cat .env | grep GEMINI_API_KEY
+# 1. Copiar template si no existe
+cp .env.template .env
 
-# Si no está, agregarlo:
-echo "GEMINI_API_KEY=tu-api-key" >> .env
+# 2. Configurar variables de entorno mínimas
+nano .env
+
+# Agregar/verificar:
+GOOGLE_CLOUD_PROJECT=tu-proyecto-id
+GOOGLE_APPLICATION_CREDENTIALS=.config/credentials.json  # ← Ruta correcta
+GEMINI_API_KEY=tu-gemini-api-key
+GEMINI_CHAT_MODEL=gemini-2.5-flash  # ← Modelo recomendado
+
+# 3. Copiar credentials de Google Cloud
+cp ~/Downloads/tu-proyecto-xxxxx.json .config/credentials.json
+
+# 4. Copiar catálogo de aplicaciones (opcional pero recomendado)
+# El sistema usa data/catalogo.csv para enriquecer búsquedas
+cp tu-catalogo.csv data/catalogo.csv
+# (280+ aplicaciones de negocio)
 ```
 
 ### 3. Demo Interactiva

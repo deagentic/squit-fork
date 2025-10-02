@@ -2,201 +2,341 @@
 
 Documentación completa del proyecto SQUIT organizada por categorías.
 
+Última actualización: 2025-10-02
+
 ---
 
 ## 🚀 Inicio Rápido
 
 **Nuevo en SQUIT?** Empieza aquí:
-1. Lee el [README principal](../README.md)
-2. Sigue la [Guía de Setup](setup/BIGQUERY_VECTOR_COMPLETE.md)
-3. Ejecuta `python3 scripts/squit.py`
+
+1. **Lee el [README principal](../README.md)** - Visión general y quick start
+2. **Configura credenciales**:
+   - Copia `.env.template` → `.env`
+   - Descarga service account JSON → `.config/credentials.json`
+   - Obtén Gemini API Key
+   - Copia catálogo → `data/catalogo.csv`
+3. **Ejecuta**: `python3 scripts/squit.py`
 
 ---
 
-## 📁 Organización
+## 📁 Organización de Documentos
 
 ```
 docs/
 ├── setup/          → Pipeline de datos y configuración inicial
-├── usage/          → Cómo usar SQUIT
+├── usage/          → Cómo usar SQUIT (CLI, API, ejemplos)
 ├── development/    → Arquitectura y desarrollo avanzado
-└── archive/        → Documentación histórica/obsoleta
+└── archive/        → Documentación histórica (referencia)
 ```
 
 ---
 
 ## 📊 1. SETUP - Pipeline y Configuración
 
-### Pipeline de Datos
-- **[BigQuery Vector Complete](setup/BIGQUERY_VECTOR_COMPLETE.md)** ⭐ **PRINCIPAL**
+### Configuración Inicial
+
+- **[BigQuery Vector Complete](setup/BIGQUERY_VECTOR_COMPLETE.md)** ⭐ **GUÍA PRINCIPAL**
   - Pipeline completo de chunks + embeddings + índice vectorial
-  - Guía paso a paso desde extracción hasta búsqueda
-  - ~30min chunking, ~2-4h embeddings, ~10min índice
+  - Paso a paso desde extracción hasta búsqueda
+  - Tiempos: ~30min chunking, ~2-4h embeddings, ~10min índice
+  - **Empieza aquí si vas a procesar código SQL**
 
 - **[Extraction Guide](setup/EXTRACTION_GUIDE.md)**
   - Cómo extraer código SQL desde SQL Server
   - Script SQL para obtener objetos de todas las DBs
   - Carga a BigQuery
 
-### Configuración
-- **[Weaviate Setup](setup/WEAVIATE_SETUP.md)**
-  - Setup de Weaviate (opcional, para Fase 2)
-  - Docker compose configuration
+### Configuración de IA
 
 - **[Models Standard](setup/MODELS_STANDARD.md)**
-  - Configuración de modelos IA
-  - Gemini 2.5 Flash para agentes
-  - Embedding-001 para vectores
+  - Configuración de modelos Gemini
+  - ⭐ **gemini-2.5-flash** para agentes (RECOMENDADO)
+  - ⭐ **gemini-embedding-001** para vectores (768 dims)
+  - Parámetros: temperature, max_tokens, etc.
+
+### Sistemas Opcionales
+
+- **[Weaviate Setup](setup/WEAVIATE_SETUP.md)**
+  - Setup de Weaviate (opcional, para sistemas alternativos)
+  - Docker compose configuration
+  - **Nota**: Sistema principal usa BigQuery nativo
 
 ---
 
-## 🎯 2. USAGE - Uso de la Aplicación
+## 💻 2. USAGE - Cómo Usar SQUIT
 
-### Guía Principal
-- **[Agentic ADK Guide](usage/AGENTIC_ADK_GUIDE.md)** ⭐ **PRINCIPAL**
-  - Cómo usar `python3 scripts/squit.py`
-  - Conversaciones multi-turn con memoria
-  - Ejemplos de queries y comandos
+### Uso Principal
 
-### Referencias
+- **[Agentic ADK Guide](usage/AGENTIC_ADK_GUIDE.md)** ⭐ **SISTEMA PRINCIPAL**
+  - Sistema agentico con Google ADK
+  - MasterAgent + agentes especializados
+  - Memoria conversacional multi-turn
+  - Context caching + few-shot learning
+  - **CLI**: `python3 scripts/squit.py`
+
 - **[API Reference](usage/API.md)**
-  - APIs de BigQueryVectorSearch
-  - MasterAgent methods
-  - QueryLogger methods
+  - APIs de búsqueda y análisis
+  - Endpoints de BigQuery Vector Search
+  - Catalog Enricher API
+  - Query Logger API
 
 - **[Examples](usage/EXAMPLES.md)**
-  - Ejemplos de código
-  - Casos de uso comunes
-  - Snippets reutilizables
+  - Ejemplos prácticos de uso
+  - Scripts de demo
+  - Casos de uso reales
 
 ---
 
-## 💻 3. DEVELOPMENT - Arquitectura y Avanzado
+## 🏗️ 3. DEVELOPMENT - Arquitectura
 
 ### Arquitectura del Sistema
+
 - **[System Overview](development/SYSTEM_OVERVIEW.md)**
-  - Visión general del sistema
-  - Componentes principales
+  - Arquitectura general
   - Flujo de datos
+  - Componentes principales
 
-- **[Technical Deep Dive](development/TECHNICAL.md)**
-  - Detalles técnicos de implementación
-  - Algoritmos y optimizaciones
-  - Performance tuning
+- **[Technical Documentation](development/TECHNICAL.md)**
+  - Decisiones técnicas
+  - Trade-offs
+  - Performance optimization
 
-### Mejoras de Memoria (Fase 1)
-- **[Phase 1 Implementation](development/PHASE1_IMPLEMENTATION.md)** ⭐ **NUEVO**
-  - Context Caching (latencia -50%)
-  - LangChain BufferMemory
-  - QueryLogger BigQuery
-  - Few-shots automáticos
+### Fases de Desarrollo
 
-- **[Memory Optimization](development/MEMORY_OPTIMIZATION.md)**
-  - Sistema de memoria multi-turn
-  - Context awareness
-  - Session management
-
-- **[Memory Research](development/MEMORY_RESEARCH.md)**
-  - Investigación de soluciones de memoria
-  - Comparación de librerías
-  - Vertex AI Memory Bank vs LangChain vs MemGPT
-
-- **[Memory Action Plan](development/MEMORY_ACTION_PLAN.md)**
-  - Plan de implementación Fase 2
-  - Weaviate Semantic Memory
-  - Roadmap futuro
-
-- **[MCP Roadmap](development/MCP_ROADMAP.md)** 🆕
-  - Model Context Protocol implementation
-  - Integración con Claude Desktop, Cursor, etc.
-  - Tools extensibles para IDEs
-
-- **[Context Awareness Fix](development/CONTEXT_AWARENESS_FIX.md)**
-  - Fix de interpretación contextual
-  - System prompt mejorado
-  - Test cases
-
-### Summaries
-- **[Optimization Summary](development/OPTIMIZATION_SUMMARY.md)**
-  - Resumen de mejoras implementadas
-  - Métricas de impacto
+- **[Phase 1 Implementation](development/PHASE1_IMPLEMENTATION.md)**
+  - Implementación de memoria conversacional
+  - Context caching
+  - Few-shot learning
 
 - **[Phase 1 Executive Summary](development/PHASE1_SUMMARY_EXECUTIVE.md)**
-  - Resumen ejecutivo para stakeholders
-  - KPIs y resultados
+  - Resumen ejecutivo de mejoras
+  - Métricas de impacto
+  - Next steps
 
-- **[Quickstart Memory](development/QUICKSTART_MEMORY.md)**
-  - Guía rápida de memoria multi-turn
-  - Comandos y ejemplos
+### Optimizaciones
 
-- **[Changelog Memory](development/CHANGELOG_MEMORY.md)**
-  - Historial de cambios en sistema de memoria
-  - v2.0.1 → v2.1.0
+- **[Memory Optimization](development/MEMORY_OPTIMIZATION.md)**
+  - Optimización de memoria conversacional
+  - Estrategias de caching
+  - Performance tuning
 
----
-
-## 🗄️ 4. ARCHIVE - Documentación Histórica
-
-Documentación obsoleta o superada por versiones más recientes:
-
-- `archive/AGENTIC_RAG.md` - Sistema RAG original (pre-ADK)
-- `archive/AGENTIC_SYSTEM_PLAN.md` - Plan original del sistema
-- `archive/MIGRATION_GUIDE.md` - Migración Weaviate→BigQuery
-- `archive/PHASE1_SUMMARY.md` - Resumen antiguo de Fase 1
-- `archive/TODO.md` - TODOs históricos
-- `archive/ESTADO_ACTUAL_SISTEMA.md` - Estado del sistema (snapshot antiguo)
-- `archive/BIGQUERY_VECTOR_SYSTEM.md` - Docs antiguas de BigQuery
-- `archive/DEMOCRATIZATION_MANIFESTO.md` - Manifiesto del proyecto
-- `archive/context.md` - Contexto histórico
-- `archive/info.md` - Info misc
-
-**Nota**: Estos docs se mantienen por referencia histórica pero pueden estar desactualizados.
+- **[Context Awareness Fix](development/CONTEXT_AWARENESS_FIX.md)**
+  - Mejoras en awareness de contexto
+  - Solución a problemas de memoria
 
 ---
 
-## 📖 Guías por Tarea
+## 📦 4. ESTRUCTURA DE ARCHIVOS
 
-### "Quiero configurar SQUIT por primera vez"
-1. [README.md](../README.md) - Overview
-2. [setup/BIGQUERY_VECTOR_COMPLETE.md](setup/BIGQUERY_VECTOR_COMPLETE.md) - Pipeline completo
-3. [setup/EXTRACTION_GUIDE.md](setup/EXTRACTION_GUIDE.md) - Extraer código SQL
-4. Configure `.env` con tus credenciales
+### Directorios Principales
 
-### "Quiero usar el asistente conversacional"
-1. [usage/AGENTIC_ADK_GUIDE.md](usage/AGENTIC_ADK_GUIDE.md) - Guía principal
-2. `python3 scripts/squit.py`
-3. [usage/EXAMPLES.md](usage/EXAMPLES.md) - Ejemplos
-
-### "Quiero entender la arquitectura"
-1. [development/SYSTEM_OVERVIEW.md](development/SYSTEM_OVERVIEW.md) - Overview
-2. [development/TECHNICAL.md](development/TECHNICAL.md) - Detalles técnicos
-3. [development/PHASE1_IMPLEMENTATION.md](development/PHASE1_IMPLEMENTATION.md) - Mejoras Fase 1
-
-### "Quiero contribuir al proyecto"
-1. [CONTRIBUTING.md](../CONTRIBUTING.md) - Guía de contribución
-2. [development/MEMORY_ACTION_PLAN.md](development/MEMORY_ACTION_PLAN.md) - Roadmap
-3. Revisa issues en GitHub
+```
+squit/
+├── .config/
+│   ├── credentials.json          # ← Service account GCP (NO en git)
+│   └── README.md                 # Instrucciones de credentials
+│
+├── data/
+│   ├── catalogo.csv              # ← Catálogo de 280+ apps (NO en git)
+│   ├── catalog.example.csv       # Ejemplo de catálogo
+│   └── README.md                 # Documentación de catálogo
+│
+├── app/
+│   ├── agentic_adk/              # ⭐ Sistema principal
+│   │   ├── agents/               # Agentes especializados
+│   │   │   ├── master_agent.py   # Orquestador
+│   │   │   ├── code_search_agent.py
+│   │   │   ├── explanation_agent.py
+│   │   │   └── dependency_agent.py
+│   │   ├── tools/                # Herramientas para agentes
+│   │   │   ├── vector_search.py  # Búsqueda BigQuery
+│   │   │   ├── code_reader.py
+│   │   │   └── dependency_search.py
+│   │   ├── catalog_enricher.py   # Enriquecimiento con catálogo
+│   │   ├── query_logger.py       # Analytics de queries
+│   │   └── config.py             # Configuración
+│   │
+│   ├── bigquery_vector/          # Pipeline de datos
+│   │   ├── chunking_pipeline.py  # Chunking inteligente
+│   │   ├── vector_search.py      # Búsquedas vectoriales
+│   │   ├── progress_tracker.py   # Tracking de progreso
+│   │   └── config.py             # Configuración BigQuery
+│   │
+│   └── squit_client/             # Cliente base BigQuery
+│       ├── client.py
+│       └── config.py
+│
+├── scripts/
+│   ├── squit.py                  # ⭐ CLI PRINCIPAL (EMPEZAR AQUÍ)
+│   ├── run_bigquery_pipeline.py  # Pipeline de datos
+│   ├── demo_agentic_adk.py       # Demo completo
+│   └── test_*.py                 # Tests y validaciones
+│
+├── docs/                         # ← ESTÁS AQUÍ
+│   ├── INDEX.md                  # ⭐ Este archivo
+│   ├── setup/                    # Guías de setup
+│   ├── usage/                    # Guías de uso
+│   └── development/              # Docs técnicos
+│
+├── .env                          # ← Configuración (crear desde template)
+├── .env.template                 # Template de configuración
+├── requirements.txt              # Dependencias Python
+├── README.md                     # README principal
+└── CONTRIBUTING.md               # Guía de contribución
+```
 
 ---
 
-## 🔗 Enlaces Externos
+## 🔑 Archivos de Configuración
 
-- **Gemini API**: https://ai.google.dev/gemini-api/docs
-- **BigQuery ML**: https://cloud.google.com/bigquery/docs/generate-text-embedding
-- **Google ADK**: https://google.github.io/adk-docs/
-- **LangChain**: https://python.langchain.com/docs/
+| Archivo | Ubicación | Propósito | En Git |
+|---------|-----------|-----------|--------|
+| `.env` | Root | Variables de entorno | ❌ No |
+| `.env.template` | Root | Template de config | ✅ Sí |
+| `credentials.json` | `.config/` | Service account GCP | ❌ No |
+| `catalogo.csv` | `data/` | Catálogo de 280+ apps | ❌ No |
+| `catalog.example.csv` | `data/` | Ejemplo de catálogo | ✅ Sí |
+
+### Variables de Entorno Clave
+
+```bash
+# Mínimo requerido en .env:
+GOOGLE_CLOUD_PROJECT=tu-proyecto-id
+GOOGLE_APPLICATION_CREDENTIALS=.config/credentials.json  # ← Ruta correcta
+GEMINI_API_KEY=tu-api-key
+GEMINI_CHAT_MODEL=gemini-2.5-flash  # ← Modelo recomendado
+
+# BigQuery (tablas principales)
+BIGQUERY_DATASET=deacero_sql_objects
+BIGQUERY_TABLE=sql_objects_code
+BIGQUERY_CHUNKS_TABLE=intelligent_chunks
+BIGQUERY_EMBEDDINGS_TABLE=chunk_embeddings
+
+# Embeddings
+EMBEDDING_MODEL_NAME=gemini_embedding_model
+EMBEDDING_ENDPOINT=gemini-embedding-001
+EMBEDDING_DIMENSIONS=768
+```
 
 ---
 
-## 📝 Convenciones
+## 🎓 Flujos de Trabajo Comunes
 
-- ⭐ = Documentación principal/recomendada
-- 🆕 = Documentación nueva/reciente
-- 📊 = Contiene métricas/datos
-- 🔧 = Guía técnica hands-on
-- 📖 = Referencia teórica
+### 1. Usuario Final (Solo Consultas)
+
+```bash
+# Setup inicial (una vez)
+cp .env.template .env
+# Editar .env con credenciales
+cp tu-proyecto-xxxxx.json .config/credentials.json
+
+# Usar SQUIT
+python3 scripts/squit.py
+```
+
+### 2. Administrador (Procesar Datos)
+
+```bash
+# 1. Extraer código SQL (ver EXTRACTION_GUIDE.md)
+# 2. Cargar a BigQuery
+# 3. Ejecutar pipeline
+python3 scripts/run_bigquery_pipeline.py
+
+# Monitorear progreso
+python3 scripts/monitor_pipeline.py
+```
+
+### 3. Desarrollador (Contribuir)
+
+```bash
+# Fork y clonar
+git clone https://github.com/tu-usuario/squit.git
+cd squit
+
+# Setup
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Hacer cambios
+git checkout -b feature/mi-feature
+
+# Commit y PR
+git commit -m "feat: mi cambio"
+git push origin feature/mi-feature
+```
 
 ---
 
-**Última actualización**: 2025-10-01  
-**Versión**: 2.1.0
+## 🔗 Enlaces Rápidos
+
+### Documentos Clave
+
+- [README Principal](../README.md) - Visión general del proyecto
+- [CONTRIBUTING](../CONTRIBUTING.md) - Cómo contribuir
+- [BigQuery Vector Complete](setup/BIGQUERY_VECTOR_COMPLETE.md) - Pipeline completo
+- [Agentic ADK Guide](usage/AGENTIC_ADK_GUIDE.md) - Sistema principal de agentes
+- [Models Standard](setup/MODELS_STANDARD.md) - Configuración de modelos IA
+
+### Scripts Importantes
+
+- `scripts/squit.py` - CLI principal
+- `scripts/run_bigquery_pipeline.py` - Pipeline de datos
+- `scripts/demo_agentic_adk.py` - Demo completo del sistema
+
+### Configuración
+
+- `.env.template` - Template de variables de entorno
+- `data/README.md` - Documentación de catálogo
+- `.config/README.md` - Documentación de credenciales
+
+---
+
+## ❓ FAQ
+
+### ¿Por dónde empiezo?
+
+1. Lee el [README principal](../README.md)
+2. Configura `.env` y credentials
+3. Ejecuta `python3 scripts/squit.py`
+
+### ¿Dónde van las credenciales?
+
+- Service account JSON → `.config/credentials.json`
+- API keys y config → `.env` (root)
+- **Nunca** commitear estos archivos
+
+### ¿Dónde está el catálogo?
+
+- Catálogo real → `data/catalogo.csv` (280+ apps)
+- Ejemplo → `data/catalog.example.csv`
+- Sistema busca automáticamente en `data/`
+
+### ¿Qué modelo de Gemini usar?
+
+- **Chat/Agentes**: `gemini-2.5-flash` (recomendado)
+- **Embeddings**: `gemini-embedding-001` (768 dims)
+- Configurar en `.env`: `GEMINI_CHAT_MODEL=gemini-2.5-flash`
+
+### ¿Cómo contribuir?
+
+1. Lee [CONTRIBUTING.md](../CONTRIBUTING.md)
+2. Fork el repo
+3. Crea branch (`feature/` o `fix/`)
+4. Commit con formato: `feat:`, `fix:`, `docs:`, etc.
+5. Abre Pull Request
+
+---
+
+## 📞 Soporte
+
+- **Issues**: [GitHub Issues](https://github.com/grupodeacero/squit/issues)
+- **Docs**: Este directorio (`docs/`)
+- **Contribución**: [CONTRIBUTING.md](../CONTRIBUTING.md)
+
+---
+
+**Última actualización**: 2025-10-02  
+**Versión**: 2.0.0  
+**Mantenido por**: Grupo DeAcero

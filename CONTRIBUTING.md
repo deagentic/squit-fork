@@ -28,7 +28,7 @@ cd squit
 ### 2. Setup del Entorno
 
 ```bash
-# Crear entorno virtual
+# Crear entorno virtual (recomendado)
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
 # o venv\Scripts\activate en Windows
@@ -38,7 +38,21 @@ pip install -r requirements.txt
 
 # Copiar configuración
 cp .env.template .env
-# Editar .env con tus credenciales
+
+# Configurar credenciales de Google Cloud
+# 1. Descargar service account JSON desde GCP Console
+cp ~/Downloads/tu-proyecto-xxxxx.json .config/credentials.json
+
+# 2. Editar .env con tus valores:
+nano .env
+# Configurar:
+# - GOOGLE_CLOUD_PROJECT=tu-proyecto-id
+# - GOOGLE_APPLICATION_CREDENTIALS=.config/credentials.json
+# - GEMINI_API_KEY=tu-api-key
+# - GEMINI_CHAT_MODEL=gemini-2.5-flash
+
+# 3. Si tienes catálogo de apps, copiarlo:
+# cp tu-catalogo.csv data/catalogo.csv
 ```
 
 ### 3. Crear Branch

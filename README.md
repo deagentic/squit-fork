@@ -40,17 +40,26 @@ cd squit
 # 1. Copiar template de configuración
 cp .env.template .env
 
-# 2. Obtener credenciales de Google Cloud
-# Ver instrucciones detalladas en .config/README.md
-
-# 3. Copiar credentials.json a .config/
+# 2. Obtener y configurar credenciales de Google Cloud
+# a) Descargar service account JSON desde Google Cloud Console
+#    → IAM & Admin → Service Accounts → Create Key → JSON
 cp ~/Downloads/tu-proyecto-xxxxx.json .config/credentials.json
 
-# 4. Editar .env con tus valores
-# Necesitas:
-# - Google Cloud Project con BigQuery
-# - Gemini API Key (https://makersuite.google.com/app/apikey)
-# - Credentials ya están en .config/credentials.json
+# b) Obtener Gemini API Key
+#    → https://makersuite.google.com/app/apikey
+
+# 3. Editar .env con tus valores
+nano .env
+
+# Configuración mínima requerida:
+# GOOGLE_CLOUD_PROJECT=tu-proyecto-id
+# GOOGLE_APPLICATION_CREDENTIALS=.config/credentials.json  # ← Ruta correcta
+# GEMINI_API_KEY=tu-gemini-api-key
+# GEMINI_CHAT_MODEL=gemini-2.5-flash  # ← Modelo recomendado
+
+# 4. Copiar catálogo de aplicaciones (280+ apps)
+# Si tienes el catálogo real, copiarlo a:
+# cp tu-catalogo.csv data/catalogo.csv
 ```
 
 ### 3. Instalar Dependencias
@@ -255,6 +264,56 @@ squit[1]> si modifico la tabla VentasPedidos, qué se rompe
 
 ---
 
+## 📁 Estructura del Proyecto
+
+```
+squit/
+├── .config/
+│   └── credentials.json          # ← Service account de Google Cloud
+├── data/
+│   └── catalogo.csv               # ← Catálogo de 280+ aplicaciones
+├── app/
+│   ├── agentic_adk/               # Sistema agentico con Google ADK
+│   │   ├── agents/                # Agentes especializados
+│   │   │   ├── master_agent.py    # Orquestador principal
+│   │   │   ├── code_search_agent.py
+│   │   │   └── explanation_agent.py
+│   │   ├── tools/                 # Herramientas para agentes
+│   │   │   ├── vector_search.py   # Búsqueda en BigQuery
+│   │   │   └── dependency_search.py
+│   │   ├── catalog_enricher.py    # Enriquecimiento con catálogo
+│   │   └── query_logger.py        # Analytics de queries
+│   ├── bigquery_vector/           # Pipeline de datos
+│   │   ├── chunking_pipeline.py   # Chunking inteligente
+│   │   ├── vector_search.py       # Búsquedas vectoriales
+│   │   └── progress_tracker.py    # Tracking de progreso
+│   └── squit_client/              # Cliente base BigQuery
+├── scripts/
+│   ├── squit.py                   # ← CLI principal (EMPEZAR AQUÍ)
+│   ├── run_bigquery_pipeline.py   # Pipeline de datos
+│   └── demo_*.py                  # Demos y ejemplos
+├── docs/                          # Documentación completa
+│   ├── INDEX.md                   # Índice maestro
+│   ├── setup/                     # Guías de instalación
+│   ├── usage/                     # Guías de uso
+│   └── development/               # Docs técnicos
+├── .env                           # ← Configuración (crear desde template)
+├── .env.template                  # Template de configuración
+└── requirements.txt               # Dependencias Python
+```
+
+### 🔑 Archivos de Configuración
+
+| Archivo | Propósito | Ubicación Correcta | En Git |
+|---------|-----------|-------------------|--------|
+| `.env` | Variables de entorno | Root | ❌ No |
+| `credentials.json` | Service account GCP | `.config/` | ❌ No |
+| `catalogo.csv` | Catálogo de apps | `data/` | ❌ No |
+| `.env.template` | Template de config | Root | ✅ Sí |
+| `catalog.example.csv` | Ejemplo de catálogo | `data/` | ✅ Sí |
+
+---
+
 ## 🔒 Seguridad y Privacidad
 
 - ✅ **Credenciales**: Nunca se commitean (`.gitignore` robusto)
@@ -262,6 +321,7 @@ squit[1]> si modifico la tabla VentasPedidos, qué se rompe
 - ✅ **API Keys**: Gestionadas via `.env` (no hardcodeadas)
 - ✅ **Data Privacy**: Código SQL permanece en tu BigQuery
 - ✅ **Gemini API**: Solo recibe queries del usuario, no todo el código
+- ✅ **Rutas seguras**: Credenciales en `.config/`, catálogo en `data/`
 
 ---
 
