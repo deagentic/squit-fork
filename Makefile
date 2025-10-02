@@ -59,17 +59,30 @@ squit: ## Ejecutar CLI interactivo de SQUIT en Docker
 	@echo "  • data/catalogo.csv (280 apps)"
 	@echo "  • .env variables"
 	@echo ""
+	@$(DOCKER_COMPOSE) --profile cli down 2>/dev/null || true
 	@$(DOCKER_COMPOSE) --profile cli up squit-cli
 
 squit-build: ## Construir imagen del CLI de SQUIT
 	@echo "$(BLUE)Construyendo imagen CLI de SQUIT...$(NC)"
-	$(DOCKER) build -f Dockerfile.cli -t squit-cli:latest .
+	@$(DOCKER_COMPOSE) --profile cli down 2>/dev/null || true
+	@$(DOCKER) rmi squit-squit-cli:latest 2>/dev/null || true
+	@$(DOCKER_COMPOSE) --profile cli build --no-cache squit-cli
 
-squit-rebuild: ## Reconstruir y ejecutar CLI de SQUIT
-	@echo "$(BLUE)Reconstruyendo CLI de SQUIT...$(NC)"
-	@$(DOCKER_COMPOSE) --profile cli build squit-cli
+squit-rebuild: ## Reconstruir y ejecutar CLI de SQUIT (forzar rebuild completo)
+	@echo "$(BLUE)Reconstruyendo CLI de SQUIT (sin cache)...$(NC)"
+	@$(DOCKER_COMPOSE) --profile cli down 2>/dev/null || true
+	@$(DOCKER) rmi squit-squit-cli:latest 2>/dev/null || true
+	@$(DOCKER_COMPOSE) --profile cli build --no-cache squit-cli
 	@echo "$(GREEN)Iniciando CLI...$(NC)"
 	@$(DOCKER_COMPOSE) --profile cli up squit-cli
+
+squit-clean: ## Limpiar completamente contenedores e imágenes de SQUIT
+	@echo "$(YELLOW)Limpiando contenedores e imágenes...$(NC)"
+	@$(DOCKER_COMPOSE) --profile cli down -v 2>/dev/null || true
+	@$(DOCKER) rmi squit-squit-cli:latest 2>/dev/null || true
+	@$(DOCKER) rmi squit-cli:latest 2>/dev/null || true
+	@$(DOCKER) rmi squit-cli:test 2>/dev/null || true
+	@echo "$(GREEN)Limpieza completa$(NC)"
 
 dev: ## Iniciar entorno de desarrollo con Jupyter
 	@echo "$(GREEN)Iniciando entorno de desarrollo...$(NC)"
