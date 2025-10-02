@@ -346,12 +346,19 @@ Proyecto desarrollado en Grupo DeAcero para democratizar el acceso al conocimien
 
 ---
 
-## 📊 Stats
+## 📊 Project Stats
 
-![GitHub stars](https://img.shields.io/github/stars/grupodeacero/squit?style=social)
-![GitHub forks](https://img.shields.io/github/forks/grupodeacero/squit?style=social)
-![GitHub issues](https://img.shields.io/github/issues/grupodeacero/squit)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/grupodeacero/squit)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-grupodeacero%2Fsquit-181717?logo=github)](https://github.com/grupodeacero/squit)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/grupodeacero/squit)](https://github.com/grupodeacero/squit/commits/main)
+[![GitHub last commit](https://img.shields.io/github/last-commit/grupodeacero/squit)](https://github.com/grupodeacero/squit/commits/main)
+[![Lines of code](https://img.shields.io/tokei/lines/github/grupodeacero/squit)](https://github.com/grupodeacero/squit)
+
+### Dataset & Performance
+- **SQL Objects**: 3.4M+
+- **BigQuery Tables**: 5+ (chunks, embeddings, history)
+- **Search Latency**: ~2.5s (with cache)
+- **Embedding Throughput**: 300-500 objects/sec
+- **Context Retention**: 91%
 
 ---
 
