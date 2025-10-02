@@ -1,14 +1,10 @@
 # Git
 .git
 .gitignore
-
-# Documentation
-README.md
-docs/
-*.md
+.gitattributes
 
 # Python
-__pycache__/
+__pycache__
 *.py[cod]
 *$py.class
 *.so
@@ -28,50 +24,53 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual environments
 venv/
-env/
 ENV/
-.venv/
+env/
+.venv
 
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# OS
+*~
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
 
-# Logs
-*.log
-logs/
-
-# Test coverage
-htmlcov/
-.coverage
-.pytest_cache/
-
-# Temporary files
-*.tmp
-*.temp
-.cache/
-
-# Development files
-Makefile
-docker-compose.yml
-Dockerfile.dev
+# Credentials y configuración (NO copiar a imagen)
 .env
 .env.*
+!.env.template
+credentials.json
+.config/credentials.json
+*.key
+*.pem
 
-# Backup files
-*.backup
-*.old
-*~
+# Datos (se montan como volúmenes)
+data/catalogo.csv
+data/*.csv
+!data/catalog.example.csv
+
+# Documentación y tests
+docs/
+*.md
+!README.md
+tests/
+*.log
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+!Dockerfile.cli
+
+# Otros
+*.bak
+*.tmp
+.cache/
