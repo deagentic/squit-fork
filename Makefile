@@ -59,22 +59,7 @@ squit: ## Ejecutar CLI interactivo de SQUIT en Docker
 	@echo "  • data/catalogo.csv (280 apps)"
 	@echo "  • .env variables"
 	@echo ""
-	@$(DOCKER_COMPOSE) --profile cli down 2>/dev/null || true
-	@$(DOCKER) run -it --rm \
-		--name squit-cli \
-		--network squit-network \
-		-v "$(PWD)/.config:/workspace/.config:rw" \
-		-v "$(PWD)/data:/workspace/data:rw" \
-		-v "$(PWD)/.env:/workspace/.env:ro" \
-		-v "$(PWD)/app:/workspace/app:ro" \
-		-v "$(PWD)/scripts:/workspace/scripts:ro" \
-		-v squit-persistent-data:/workspace/.squit:rw \
-		--env-file .env \
-		-e GOOGLE_APPLICATION_CREDENTIALS=.config/credentials.json \
-		-e PYTHONUNBUFFERED=1 \
-		-e GRPC_VERBOSITY=ERROR \
-		-e GLOG_minloglevel=2 \
-		squit-squit-cli:latest
+	@$(DOCKER_COMPOSE) --profile cli run --rm squit-cli
 
 squit-build: ## Construir imagen del CLI de SQUIT
 	@echo "$(BLUE)Construyendo imagen CLI de SQUIT...$(NC)"
