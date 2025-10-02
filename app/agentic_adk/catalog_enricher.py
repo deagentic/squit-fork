@@ -32,10 +32,32 @@ class CatalogEnricher:
         Inicializa el enriquecedor.
         
         Args:
-            catalog_path: Path al archivo catalogo.csv
+            catalog_path: Path al archivo catalogo.csv o catalog.csv
         """
         if catalog_path is None:
-            catalog_path = Path(__file__).parent.parent / "data" / "catalogo.csv"
+            # Buscar archivo de catálogo en múltiples ubicaciones
+            # Prioridad: app/data/ (real) > ../data/ (root) > ejemplos
+            app_data_path = Path(__file__).parent / "data"
+            root_data_path = Path(__file__).parent.parent / "data"
+            
+            candidates = [
+                # Prioridad 1: catálogo real en app/data/
+                app_data_path / "catalogo.csv",
+                # Prioridad 2: catálogo en root data/
+                root_data_path / "catalogo.csv",
+                root_data_path / "catalog.csv",
+                # Prioridad 3: ejemplos
+                app_data_path / "catalog.example.csv",
+                root_data_path / "catalog.example.csv"
+            ]
+            
+            for candidate in candidates:
+                if candidate.exists():
+                    catalog_path = candidate
+                    break
+            else:
+                # Fallback: usar catalogo.csv en app/data aunque no exista
+                catalog_path = app_data_path / "catalogo.csv"
         
         self.catalog_path = catalog_path
         self.catalog_df = None
@@ -44,11 +66,16 @@ class CatalogEnricher:
     def _load_catalog(self):
         """Carga el catálogo desde CSV."""
         try:
+            if not self.catalog_path.exists():
+                logger.warning(f"⚠️  Catálogo no encontrado: {self.catalog_path}")
+                self.catalog_df = pd.DataFrame()
+                return
+            
             # Leer con encoding latin1 (contiene caracteres especiales)
             self.catalog_df = pd.read_csv(self.catalog_path, encoding='latin1')
-            logger.info(f"✅ Catálogo cargado: {len(self.catalog_df)} aplicaciones")
+            logger.info(f"✅ Catálogo cargado: {len(self.catalog_df)} aplicaciones desde {self.catalog_path.name}")
         except Exception as e:
-            logger.error(f"Error cargando catálogo: {e}")
+            logger.error(f"❌ Error cargando catálogo desde {self.catalog_path}: {e}")
             self.catalog_df = pd.DataFrame()
     
     def enrich_query(self, user_query: str) -> Dict[str, Any]:
@@ -81,39 +108,45 @@ class CatalogEnricher:
         # Buscar coincidencias en el catálogo
         matches = []
         
+        # Detectar columnas disponibles (backward compatibility)
+        has_old_format = 'Name' in self.catalog_df.columns
+        name_col = 'Name' if has_old_format else 'application_name'
+        desc_col = 'Descripcion' if has_old_format else 'description'
+        system_col = 'Sistema Objeto' if has_old_format else 'database_name'
+        domain_col = 'Proceso End To End' if has_old_format else 'business_domain'
+        
         for idx, row in self.catalog_df.iterrows():
             score = 0
             
-            # Match en nombre de aplicación
-            if pd.notna(row['Name']):
-                if query_lower in str(row['Name']).lower():
+            # Match en nombre de aplicación (peso alto)
+            if pd.notna(row.get(name_col)):
+                if query_lower in str(row[name_col]).lower():
                     score += 3
             
-            # Match en descripción
-            if pd.notna(row['Descripcion']):
-                desc = str(row['Descripcion']).lower()
-                # Buscar palabras del query en la descripción
+            # Match en descripción (buscar palabras del query)
+            if pd.notna(row.get(desc_col)):
+                desc = str(row[desc_col]).lower()
                 query_words = [w for w in query_lower.split() if len(w) > 3]
                 for word in query_words:
                     if word in desc:
                         score += 1
             
-            # Match en proceso
-            if pd.notna(row['Proceso End To End']):
-                if query_lower in str(row['Proceso End To End']).lower():
+            # Match en sistema/database
+            if pd.notna(row.get(system_col)):
+                if query_lower in str(row[system_col]).lower():
                     score += 2
             
-            # Match en sistema objeto
-            if pd.notna(row['Sistema Objeto']):
-                if query_lower in str(row['Sistema Objeto']).lower():
-                    score += 2
+            # Match en dominio/proceso
+            if pd.notna(row.get(domain_col)):
+                if query_lower in str(row[domain_col]).lower():
+                    score += 1
             
             if score > 0:
                 matches.append({
-                    'app_name': row['Name'],
-                    'system': row['Sistema Objeto'],
-                    'description': row['Descripcion'],
-                    'process': row['Proceso End To End'],
+                    'app_name': row[name_col],
+                    'system': row.get(system_col, 'N/A'),
+                    'description': row.get(desc_col, ''),
+                    'domain': row.get(domain_col, ''),
                     'score': score
                 })
         
@@ -123,21 +156,20 @@ class CatalogEnricher:
         # Extraer keywords enriquecidas
         enriched_keywords = [user_query]
         related_systems = []
-        related_processes = []
+        related_domains = []
         search_hints = []
         
         for match in matches:
-            # Agregar nombre del sistema como keyword
-            if pd.notna(match['system']):
+            # Agregar nombre del sistema/database como keyword
+            if pd.notna(match.get('system')) and match['system'] != 'N/A':
                 system_code = str(match['system']).split('-')[0].strip()
                 if system_code and system_code not in enriched_keywords:
                     enriched_keywords.append(system_code)
                     related_systems.append(match['system'])
             
-            # Agregar proceso
-            if pd.notna(match['process']):
-                if match['process'] not in related_processes:
-                    related_processes.append(match['process'])
+            # Agregar dominio de negocio
+            if pd.notna(match.get('domain')) and match['domain'] not in related_domains:
+                related_domains.append(match['domain'])
             
             # Generar hint de búsqueda
             if match['score'] >= 2:
@@ -149,7 +181,7 @@ class CatalogEnricher:
             "original_query": user_query,
             "enriched_keywords": enriched_keywords,
             "related_systems": related_systems,
-            "related_processes": related_processes,
+            "related_domains": related_domains,
             "search_hints": search_hints,
             "catalog_matches": len(matches)
         }

@@ -25,17 +25,17 @@ from agentic_adk.tools import (
     analyze_impact_tool
 )
 
+logger = logging.getLogger(__name__)
+
 # Nuevas importaciones para Fase 1
 try:
-    from langchain.memory import ConversationBufferWindowMemory
+    from langchain_core.messages import HumanMessage, AIMessage, trim_messages
     LANGCHAIN_AVAILABLE = True
 except ImportError:
     LANGCHAIN_AVAILABLE = False
     logger.warning("LangChain no disponible, memoria estructurada deshabilitada")
 
 from agentic_adk.query_logger import get_query_logger
-
-logger = logging.getLogger(__name__)
 
 
 class MasterAgent:
@@ -82,18 +82,13 @@ class MasterAgent:
         self._session_initialized = False
         self.turn_counter = 0
         
-        # 🚀 FASE 1 MEJORA 2: LangChain Structured Memory
+        # 🚀 FASE 1 MEJORA 2: LangChain Structured Memory (sin clases deprecadas)
         if LANGCHAIN_AVAILABLE:
-            self.langchain_memory = ConversationBufferWindowMemory(
-                k=10,  # Últimos 10 turnos
-                return_messages=True,
-                memory_key="chat_history",
-                input_key="input",
-                output_key="output"
-            )
-            logger.info("✅ LangChain BufferMemory inicializado (k=10)")
+            self.langchain_messages = []  # Lista simple de mensajes
+            self.max_messages = 20  # 20 mensajes = 10 turnos (user + assistant)
+            logger.info("✅ LangChain message list inicializada (max 10 turnos)")
         else:
-            self.langchain_memory = None
+            self.langchain_messages = None
         
         # 🚀 FASE 1 MEJORA 3: BigQuery Query Logger
         try:
@@ -279,8 +274,8 @@ Responde en español, conciso, mostrando nombres reales de objetos.
         self.turn_counter = 0
         
         # Limpiar LangChain memory
-        if self.langchain_memory:
-            self.langchain_memory.clear()
+        if self.langchain_messages is not None:
+            self.langchain_messages = []
             logger.info("✅ LangChain memory limpiada")
         
         # Re-inicializar sesión
@@ -317,13 +312,13 @@ Responde en español, conciso, mostrando nombres reales de objetos.
         
         # 🚀 FASE 1 MEJORA 2: Cargar memoria de LangChain
         langchain_context = ""
-        if self.langchain_memory:
+        if self.langchain_messages is not None:
             try:
-                memory_vars = self.langchain_memory.load_memory_variables({})
-                chat_history = memory_vars.get("chat_history", [])
-                if chat_history:
-                    langchain_context = self._format_langchain_memory(chat_history[-3:])  # Últimos 3
-                    logger.info(f"✅ Contexto LangChain: {len(chat_history)} turnos en memoria")
+                if self.langchain_messages:
+                    # Tomar últimos 6 mensajes (3 turnos)
+                    recent_messages = self.langchain_messages[-6:] if len(self.langchain_messages) > 6 else self.langchain_messages
+                    langchain_context = self._format_langchain_memory(recent_messages)
+                    logger.info(f"✅ Contexto LangChain: {len(self.langchain_messages)} mensajes en memoria")
             except Exception as e:
                 logger.warning(f"Error cargando LangChain memory: {e}")
         
@@ -399,12 +394,20 @@ Responde en español, conciso, mostrando nombres reales de objetos.
                 result_text = "No se obtuvo respuesta del agente"
             
             # 🚀 FASE 1 MEJORA 2: Guardar en LangChain memory
-            if self.langchain_memory:
+            if self.langchain_messages is not None:
                 try:
-                    self.langchain_memory.save_context(
-                        {"input": user_query},
-                        {"output": result_text}
-                    )
+                    # Agregar mensajes del turno actual
+                    self.langchain_messages.append(HumanMessage(content=user_query))
+                    self.langchain_messages.append(AIMessage(content=result_text))
+                    
+                    # Mantener solo los últimos N mensajes usando trim_messages
+                    if len(self.langchain_messages) > self.max_messages:
+                        self.langchain_messages = trim_messages(
+                            self.langchain_messages,
+                            max_tokens=self.max_messages,
+                            strategy="last",
+                            token_counter=len  # Contar por cantidad de mensajes
+                        )
                     logger.info("✅ Turno guardado en LangChain memory")
                 except Exception as e:
                     logger.warning(f"Error guardando en LangChain memory: {e}")
@@ -436,7 +439,7 @@ Responde en español, conciso, mostrando nombres reales de objetos.
         Formatea historial de LangChain para contexto.
         
         Args:
-            messages: Lista de mensajes de LangChain
+            messages: Lista de HumanMessage y AIMessage de LangChain
             
         Returns:
             String formateado con historial reciente
@@ -444,8 +447,8 @@ Responde en español, conciso, mostrando nombres reales de objetos.
         formatted = "Contexto de conversación reciente:\n"
         
         for msg in messages:
-            # LangChain messages tienen type y content
-            role = "Usuario" if hasattr(msg, 'type') and msg.type == "human" else "Asistente"
+            # Determinar rol por tipo de mensaje
+            role = "Usuario" if isinstance(msg, HumanMessage) else "Asistente"
             content = msg.content if hasattr(msg, 'content') else str(msg)
             
             # Truncar si es muy largo
