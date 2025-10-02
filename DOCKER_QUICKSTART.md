@@ -22,15 +22,23 @@ cp tu-catalogo.csv data/catalogo.csv
 
 ### 2. Ejecutar
 
+**Primera vez (construir imagen):**
+```bash
+make squit-rebuild
+```
+
+**Siguientes veces:**
 ```bash
 make squit
 ```
 
 **Eso es todo.** El sistema:
-- Construye imagen automáticamente (primera vez: ~2-3 min)
+- Construye imagen con google-adk 1.15.1 (primera vez: ~1 min)
 - Monta tu configuración (.config/, data/, .env)
 - Inicia CLI interactivo
 - Preserva todo entre ejecuciones
+
+**⚠️ IMPORTANTE:** Primera vez ejecutar `make squit-rebuild` para forzar build completo.
 
 ### 3. Usar
 
@@ -56,20 +64,23 @@ squit[3]> exit
 ## 🎯 Comandos Útiles
 
 ```bash
-# Ejecutar CLI
+# Primera vez (IMPORTANTE)
+make squit-rebuild
+
+# Ejecutar CLI (siguientes veces)
 make squit
 
-# Reconstruir imagen
+# Limpiar todo y empezar de cero
+make squit-clean
 make squit-rebuild
 
 # Ver ayuda
 make help
 
-# Ver logs
-docker logs squit-cli
+# Ver logs (en otra terminal)
+docker logs -f squit-cli
 
-# Detener
-docker stop squit-cli
+# Detener (Ctrl+C en el terminal donde corre)
 ```
 
 ---
