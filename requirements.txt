@@ -27,6 +27,7 @@ python-dotenv>=1.0.0,<2.0.0  # Para manejo de variables de entorno
 weaviate-client>=4.16.9,<5.0.0  # Cliente para Weaviate vector database
 google-genai>=1.12.1  # Google Gemini API para embeddings y agentes (compatible con ADK 0.5.0)
 google-adk>=0.5.0,<1.0.0  # Google Agent Development Kit (ADK)
+deprecated>=1.2.14  # Requerido por google-adk (dependencia implícita)
 langchain-core>=0.1.0,<1.0.0  # LangChain core (messages, sin clases deprecadas)
 pyyaml>=6.0.0,<7.0.0  # Para configuración de extracción
 pyodbc>=5.0.0,<6.0.0  # Para extracción desde SQL Server (opcional)
