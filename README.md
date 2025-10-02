@@ -31,7 +31,7 @@
 
 ### 1. Clonar el Repositorio
 ```bash
-git clone https://github.com/tu-usuario/squit.git
+git clone https://github.com/grupodeacero/squit.git
 cd squit
 ```
 
@@ -314,8 +314,8 @@ Proyecto desarrollado en Grupo DeAcero para democratizar el acceso al conocimien
 ## 📬 Contacto
 
 - **Email**: ktouma@deacero.com
-- **Issues**: [GitHub Issues](https://github.com/tu-usuario/squit/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/tu-usuario/squit/discussions)
+- **Issues**: [GitHub Issues](https://github.com/grupodeacero/squit/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/grupodeacero/squit/discussions)
 
 ---
 
@@ -334,6 +334,7 @@ Proyecto desarrollado en Grupo DeAcero para democratizar el acceso al conocimien
 - [ ] Entity tracking estructurado
 - [ ] Few-shots por dominio de negocio
 - [ ] Summarization de conversaciones largas
+- [ ] **MCP Server** (Model Context Protocol) - Integración con Claude Desktop, Cursor, etc.
 
 ### 🔮 Fase 3 (Futuro)
 - [ ] Vertex AI Memory Bank integration
@@ -341,15 +342,16 @@ Proyecto desarrollado en Grupo DeAcero para democratizar el acceso al conocimien
 - [ ] Web UI (Streamlit/Gradio)
 - [ ] API REST para integraciones
 - [ ] Support para más lenguajes (PL/SQL, T-SQL, etc.)
+- [ ] MCP Tools extensibles para IDEs
 
 ---
 
 ## 📊 Stats
 
-![GitHub stars](https://img.shields.io/github/stars/tu-usuario/squit?style=social)
-![GitHub forks](https://img.shields.io/github/forks/tu-usuario/squit?style=social)
-![GitHub issues](https://img.shields.io/github/issues/tu-usuario/squit)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/tu-usuario/squit)
+![GitHub stars](https://img.shields.io/github/stars/grupodeacero/squit?style=social)
+![GitHub forks](https://img.shields.io/github/forks/grupodeacero/squit?style=social)
+![GitHub issues](https://img.shields.io/github/issues/grupodeacero/squit)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/grupodeacero/squit)
 
 ---
 

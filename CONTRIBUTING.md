@@ -21,7 +21,7 @@
 
 ```bash
 # Fork en GitHub, luego:
-git clone https://github.com/tu-usuario/squit.git
+git clone https://github.com/grupodeacero/squit.git
 cd squit
 ```
 
@@ -269,8 +269,8 @@ Antes de implementar features grandes:
 
 ## 📬 Contacto
 
-- **Issues**: [GitHub Issues](https://github.com/tu-usuario/squit/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/tu-usuario/squit/discussions)
+- **Issues**: [GitHub Issues](https://github.com/grupodeacero/squit/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/grupodeacero/squit/discussions)
 - **Email**: ktouma@deacero.com
 
 ---
