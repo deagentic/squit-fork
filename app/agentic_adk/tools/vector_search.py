@@ -67,7 +67,7 @@ def _vector_search_impl(
     
     enricher = get_catalog_enricher()
     catalog_data = enricher.enrich_query(query)
-    print(f"Catalog data: {catalog_data}")
+    logger.debug(f"Catalog data: {catalog_data}")
     # Keywords enriquecidas del catálogo
     search_keywords = catalog_data['enriched_keywords'][:5]  # Top 5
     
