@@ -122,11 +122,12 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["app/squit_client"]
+source = ["app/squit_client", "app/agentic_adk", "app/bigquery_vector"]
 omit = [
     "*/tests/*",
     "*/test_*",
     "*/__pycache__/*",
+    "*/examples/*",
 ]
 
 [tool.coverage.report]
