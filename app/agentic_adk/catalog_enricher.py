@@ -99,7 +99,8 @@ class CatalogEnricher:
                 "enriched_keywords": [user_query],
                 "related_systems": [],
                 "related_processes": [],
-                "search_hints": []
+                "search_hints": [],
+                "catalog_matches": 0
             }
         
         query_lower = user_query.lower()
