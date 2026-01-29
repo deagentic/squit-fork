@@ -15,7 +15,7 @@ YELLOW = \033[1;33m
 BLUE = \033[0;34m
 NC = \033[0m # No Color
 
-.PHONY: help build run dev test clean logs shell format lint security install stop restart health-weaviate agentic-setup agentic-demo agentic-ingest migrate-all migrate-test monitor-migration verify-bigquery create-chunks test-chunks search-chunks analyze-data bigquery-full compare-systems clean-chunks
+.PHONY: help build run dev test clean logs shell format lint security install stop restart health-weaviate agentic-setup agentic-demo agentic-ingest migrate-all migrate-test monitor-migration verify-bigquery create-chunks test-chunks search-chunks analyze-data bigquery-full compare-systems clean-chunks mcp-build mcp-run mcp-run-bg mcp-dev mcp-test mcp-logs mcp-stop mcp-inspector
 
 # Comando por defecto
 help: ## Mostrar ayuda
@@ -447,7 +447,7 @@ clean-chunks: ## Limpiar tablas de chunks (CUIDADO: borra datos)
 	@read -p "¿Estás seguro? (y/N): " confirm && [ "$$confirm" = "y" ]
 	@echo "$(YELLOW)Limpiando tablas de chunks...$(NC)"
 	@python3 -c "
-	from google.cloud import bigquery; 
+	from google.cloud import bigquery;
 	from app.bigquery_vector.config import BigQueryVectorConfig;
 	config = BigQueryVectorConfig();
 	client = bigquery.Client();
@@ -458,3 +458,42 @@ clean-chunks: ## Limpiar tablas de chunks (CUIDADO: borra datos)
 	except Exception as e:
 	    print(f'❌ Error: {e}')
 	"
+
+# ============================================================
+# MCP Server Commands - Model Context Protocol
+# ============================================================
+
+mcp-build: ## Construir imagen MCP Server
+	@echo "$(BLUE)Construyendo SQUIT MCP Server...$(NC)"
+	$(DOCKER) build -f Dockerfile.mcp -t squit-mcp:latest .
+
+mcp-run: ## Ejecutar MCP Server (modo HTTP)
+	@echo "$(GREEN)Iniciando MCP Server (HTTP mode)...$(NC)"
+	$(DOCKER_COMPOSE) --profile mcp up squit-mcp
+
+mcp-run-bg: ## Ejecutar MCP Server en background
+	@echo "$(GREEN)Iniciando MCP Server en background...$(NC)"
+	$(DOCKER_COMPOSE) --profile mcp up -d squit-mcp
+
+mcp-dev: ## Ejecutar MCP Server local (modo STDIO para desarrollo)
+	@echo "$(BLUE)Iniciando MCP Server (STDIO mode)...$(NC)"
+	MCP_TRANSPORT=stdio GOOGLE_APPLICATION_CREDENTIALS=.config/credentials.json python -m app.mcp_server
+
+mcp-test: ## Probar tools MCP localmente
+	@echo "$(BLUE)Probando tools MCP...$(NC)"
+	GOOGLE_APPLICATION_CREDENTIALS=.config/credentials.json python scripts/test_mcp_local.py
+
+mcp-logs: ## Ver logs del MCP Server
+	$(DOCKER_COMPOSE) logs -f squit-mcp
+
+mcp-stop: ## Detener MCP Server
+	$(DOCKER_COMPOSE) --profile mcp down
+
+mcp-inspector: ## Abrir MCP Inspector para testing interactivo
+	@echo "$(BLUE)Abriendo MCP Inspector...$(NC)"
+	@echo "$(YELLOW)Requiere: npm install -g @anthropics/mcp-inspector$(NC)"
+	npx @anthropics/mcp-inspector python -m app.mcp_server
+
+mcp-health: ## Verificar salud del MCP Server
+	@echo "$(BLUE)Verificando salud del MCP Server...$(NC)"
+	@curl -s http://localhost:8000/health | python3 -m json.tool || echo "$(RED)MCP Server no disponible$(NC)"

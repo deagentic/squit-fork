@@ -6,11 +6,20 @@ la funcionalidad nativa de BigQuery Vector Search.
 """
 
 import logging
+import sys
+from pathlib import Path
 from typing import Dict, List, Optional, Any, Union
 from google.cloud import bigquery
+from google.api_core.exceptions import ServiceUnavailable, TooManyRequests, GoogleAPIError
 from .config import BigQueryVectorConfig
 
+# Importar utilidades de robustez
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils.retry import retry_with_backoff, BIGQUERY_RETRY
+from utils.metrics import get_metrics
+
 logger = logging.getLogger(__name__)
+metrics = get_metrics()
 
 
 class BigQueryVectorSearch:
@@ -26,6 +35,13 @@ class BigQueryVectorSearch:
         self.config = config or BigQueryVectorConfig()
         self.client = bigquery.Client(project=self.config.PROJECT_ID)
     
+    @retry_with_backoff(
+        max_retries=5,
+        initial_delay=2.0,
+        backoff_factor=2.0,
+        max_delay=30.0,
+        exceptions=(ServiceUnavailable, TooManyRequests, GoogleAPIError, ConnectionError)
+    )
     def semantic_search(
         self,
         query: str,
@@ -38,7 +54,9 @@ class BigQueryVectorSearch:
         use_hybrid: bool = True
     ) -> List[Dict[str, Any]]:
         """
-        Realiza búsqueda semántica avanzada.
+        Realiza búsqueda semántica avanzada con retry automático.
+        
+        Retry automático para fallos transientes de BigQuery usando backoff exponencial.
         
         Args:
             query: Consulta de búsqueda en lenguaje natural.
@@ -55,39 +73,47 @@ class BigQueryVectorSearch:
         """
         logger.info("Ejecutando búsqueda semántica: %s", query)
         
-        # Construir filtros WHERE
-        where_conditions = []
+        # Métrica de búsquedas
+        metrics.increment("searches_total", tags={"type": "semantic"})
         
-        if object_types:
-            types_str = "', '".join(object_types)
-            where_conditions.append(f"object_type IN ('{types_str}')")
-        
-        if business_domains:
-            domains_str = "', '".join(business_domains)
-            where_conditions.append(f"business_domain IN ('{domains_str}')")
-        
-        if semantic_types:
-            sem_types_str = "', '".join(semantic_types)
-            where_conditions.append(f"semantic_type IN ('{sem_types_str}')")
-        
-        if min_complexity is not None:
-            where_conditions.append(f"complexity_score >= {min_complexity}")
-        
-        if max_complexity is not None:
-            where_conditions.append(f"complexity_score <= {max_complexity}")
-        
-        where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
-        
-        # Query de búsqueda vectorial
-        if use_hybrid:
-            search_sql = self._build_hybrid_search_query(query, where_clause, limit)
-        else:
-            search_sql = self._build_vector_search_query(query, where_clause, limit)
-        
-        # Ejecutar búsqueda
-        results = list(self.client.query(search_sql))
-        
-        return [dict(row) for row in results]
+        # Timer para medir latencia
+        with metrics.timer("search_latency", tags={"type": "semantic", "hybrid": str(use_hybrid)}):
+            # Construir filtros WHERE
+            where_conditions = []
+            
+            if object_types:
+                types_str = "', '".join(object_types)
+                where_conditions.append(f"object_type IN ('{types_str}')")
+            
+            if business_domains:
+                domains_str = "', '".join(business_domains)
+                where_conditions.append(f"business_domain IN ('{domains_str}')")
+            
+            if semantic_types:
+                sem_types_str = "', '".join(semantic_types)
+                where_conditions.append(f"semantic_type IN ('{sem_types_str}')")
+            
+            if min_complexity is not None:
+                where_conditions.append(f"complexity_score >= {min_complexity}")
+            
+            if max_complexity is not None:
+                where_conditions.append(f"complexity_score <= {max_complexity}")
+            
+            where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+            
+            # Query de búsqueda vectorial
+            if use_hybrid:
+                search_sql = self._build_hybrid_search_query(query, where_clause, limit)
+            else:
+                search_sql = self._build_vector_search_query(query, where_clause, limit)
+            
+            # Ejecutar búsqueda
+            results = list(self.client.query(search_sql))
+            
+            # Métrica de resultados
+            metrics.gauge("search_results_count", len(results))
+            
+            return [dict(row) for row in results]
     
     def find_similar_objects(
         self,

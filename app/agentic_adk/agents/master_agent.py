@@ -25,7 +25,12 @@ from agentic_adk.tools import (
     analyze_impact_tool
 )
 
+# Importar utilidades de robustez
+from utils.rate_limiter import RateLimiter
+from utils.metrics import get_metrics
+
 logger = logging.getLogger(__name__)
+metrics = get_metrics()
 
 # Nuevas importaciones para Fase 1
 try:
@@ -81,6 +86,10 @@ class MasterAgent:
         self.runner = None
         self._session_initialized = False
         self.turn_counter = 0
+        
+        # 🚀 Rate limiter para llamadas a Gemini (60 req/min)
+        self.gemini_rate_limiter = RateLimiter(max_calls=60, time_window=60)
+        logger.info("✅ Rate limiter inicializado: 60 req/min")
         
         # 🚀 FASE 1 MEJORA 2: LangChain Structured Memory (sin clases deprecadas)
         if LANGCHAIN_AVAILABLE:
@@ -305,6 +314,9 @@ Responde en español, conciso, mostrando nombres reales de objetos.
         
         logger.info(f"MasterAgent procesando [Turn {self.turn_counter}]: '{user_query}'")
         
+        # 🚀 Métrica: incrementar contador de queries
+        metrics.increment("agent_queries_total", tags={"agent": "master"})
+        
         # Verificar que sesión está inicializada
         if not self._session_initialized or not self.runner:
             logger.warning("Sesión no inicializada, reinicializando...")
@@ -356,42 +368,48 @@ Responde en español, conciso, mostrando nombres reales de objetos.
                 parts=[types.Part(text=user_query)]
             )
             
-            # Ejecutar consulta usando runner persistente (mantiene historial)
-            events = self.runner.run(
-                user_id=self.user_id,
-                session_id=self.session_id,
-                new_message=message
-            )
+            # 🚀 Rate limiter + Timer para métricas
+            with self.gemini_rate_limiter:
+                with metrics.timer("agent_process_latency", tags={"agent": "master"}):
+                    # Ejecutar consulta usando runner persistente (mantiene historial)
+                    events = self.runner.run(
+                        user_id=self.user_id,
+                        session_id=self.session_id,
+                        new_message=message
+                    )
+                    
+                    # Procesar eventos y extraer respuesta
+                    result_text = ""
+                    event_count = 0
+                    
+                    for event in events:
+                        event_count += 1
+                        
+                        # Indicar progreso si está habilitado
+                        if show_progress and event_count == 1:
+                            print("  ✅ Respuesta recibida, procesando...", flush=True)
+                        
+                        # Los eventos tienen atributo 'content' con parts
+                        if hasattr(event, 'content') and event.content:
+                            if hasattr(event.content, 'parts'):
+                                for part in event.content.parts:
+                                    if hasattr(part, 'text') and part.text:
+                                        result_text += part.text
+                        
+                        # También verificar model_turn_complete
+                        if hasattr(event, 'model_turn_complete') and event.model_turn_complete:
+                            if hasattr(event.model_turn_complete, 'content'):
+                                content = event.model_turn_complete.content
+                                if content and hasattr(content, 'parts'):
+                                    for part in content.parts:
+                                        if hasattr(part, 'text') and part.text:
+                                            result_text += part.text
+                    
+                    if not result_text:
+                        result_text = "No se obtuvo respuesta del agente"
             
-            # Procesar eventos y extraer respuesta
-            result_text = ""
-            event_count = 0
-            
-            for event in events:
-                event_count += 1
-                
-                # Indicar progreso si está habilitado
-                if show_progress and event_count == 1:
-                    print("  ✅ Respuesta recibida, procesando...", flush=True)
-                
-                # Los eventos tienen atributo 'content' con parts
-                if hasattr(event, 'content') and event.content:
-                    if hasattr(event.content, 'parts'):
-                        for part in event.content.parts:
-                            if hasattr(part, 'text') and part.text:
-                                result_text += part.text
-                
-                # También verificar model_turn_complete
-                if hasattr(event, 'model_turn_complete') and event.model_turn_complete:
-                    if hasattr(event.model_turn_complete, 'content'):
-                        content = event.model_turn_complete.content
-                        if content and hasattr(content, 'parts'):
-                            for part in content.parts:
-                                if hasattr(part, 'text') and part.text:
-                                    result_text += part.text
-            
-            if not result_text:
-                result_text = "No se obtuvo respuesta del agente"
+            # 🚀 Métrica: tamaño de respuesta
+            metrics.gauge("agent_response_length", len(result_text))
             
             # 🚀 FASE 1 MEJORA 2: Guardar en LangChain memory
             if self.langchain_messages is not None:

@@ -1,0 +1,14 @@
+# ============================================================
+# SQUIT MCP Server - Dependencies
+# ============================================================
+# FastMCP 2.14.3+ with Streamable HTTP support (MCP Spec 2025-06-18)
+
+# MCP Server Framework
+fastmcp>=2.14.3,<3.0.0
+
+# HTTP Server (for production mode)
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+
+# HTTP Client (for health checks)
+httpx>=0.28.0

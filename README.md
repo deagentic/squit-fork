@@ -25,6 +25,17 @@
 - 🎯 **Clasificación Inteligente**: Organiza por dominio de negocio y complejidad
 - 📈 **Analytics Built-in**: Métricas de uso en BigQuery
 
+### 🛡️ Mejoras de Robustez (Nueva)
+
+- 🔄 **Retry Logic**: Backoff exponencial para fallos transientes
+- ⏱️ **Rate Limiting**: Control de tasa para APIs (Gemini, BigQuery)
+- 🔌 **Circuit Breaker**: Protección contra fallos en cascada
+- 📊 **Métricas**: Collector thread-safe para latencia, throughput
+- 📝 **Logging Estructurado**: JSON con contexto para debugging
+- 🔧 **Connection Pooling**: Reutilización de conexiones BigQuery
+- ⚙️ **Config por Entorno**: Configuraciones dev/staging/prod
+- 🧪 **Testing Framework**: Pytest con >70% coverage target
+
 ---
 
 ## 🚀 Quick Start (5 minutos)
@@ -355,24 +366,29 @@ Organizaciones con décadas de desarrollo SQL enfrentan:
 
 ## 📖 Documentación
 
-### 📚 [Índice Completo de Documentación](docs/INDEX.md)
+### 📚 **[Índice Completo de Documentación](docs/INDEX.md)** ← Empieza aquí
 
-### Guías Principales
+La documentación está organizada por categorías para fácil navegación:
 
-#### 🔧 Setup y Configuración
-- **[Pipeline BigQuery Completo](docs/setup/BIGQUERY_VECTOR_COMPLETE.md)** - Guía paso a paso del pipeline
-- **[Extracción de SQL Server](docs/setup/EXTRACTION_GUIDE.md)** - Cómo extraer código SQL
-- **[Configuración de Modelos](docs/setup/MODELS_STANDARD.md)** - Setup de Gemini
+#### 🚀 [Getting Started](docs/01-getting-started/)
+- **[QUICKSTART.md](docs/01-getting-started/QUICKSTART.md)** - Guía de inicio en 5 minutos
+- **[DOCKER_SETUP.md](docs/01-getting-started/DOCKER_SETUP.md)** - Setup con Docker
 
-#### 🎯 Uso de la Aplicación
-- **[Guía del Agente Conversacional](docs/usage/AGENTIC_ADK_GUIDE.md)** - Cómo usar `squit.py`
-- **[API Reference](docs/usage/API.md)** - Referencias de APIs
-- **[Ejemplos](docs/usage/EXAMPLES.md)** - Casos de uso y snippets
+#### 🏗️ [Architecture](docs/02-architecture/)
+- **[SYSTEM_OVERVIEW.md](docs/02-architecture/SYSTEM_OVERVIEW.md)** - Arquitectura general
+- **[BIGQUERY_VECTOR.md](docs/02-architecture/BIGQUERY_VECTOR.md)** - Sistema vectorial
+- **[AGENTIC_SYSTEM.md](docs/02-architecture/AGENTIC_SYSTEM.md)** - Sistema agentic
 
-#### 💻 Desarrollo y Arquitectura
-- **[System Overview](docs/development/SYSTEM_OVERVIEW.md)** - Arquitectura del sistema
-- **[Phase 1 Implementation](docs/development/PHASE1_IMPLEMENTATION.md)** - Mejoras de memoria
-- **[Memory Research](docs/development/MEMORY_RESEARCH.md)** - Investigación de soluciones
+#### 💻 [Usage](docs/03-usage/)
+- **[CLI_GUIDE.md](docs/03-usage/CLI_GUIDE.md)** - Guía del CLI interactivo
+- **[API_REFERENCE.md](docs/03-usage/API_REFERENCE.md)** - Referencias de APIs
+- **[EXAMPLES.md](docs/03-usage/EXAMPLES.md)** - Ejemplos y casos de uso
+
+#### 🔧 [Development](docs/04-development/)
+- **[CONTRIBUTING.md](docs/04-development/CONTRIBUTING.md)** - Guía de contribución
+- **[TESTING.md](docs/04-development/TESTING.md)** - Testing y coverage
+- **[TECHNICAL.md](docs/04-development/TECHNICAL.md)** - Detalles técnicos
+- **[CHANGELOG.md](docs/04-development/CHANGELOG.md)** - Historial de cambios
 
 ---
 

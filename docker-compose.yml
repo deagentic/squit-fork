@@ -32,7 +32,7 @@ services:
           cpus: '0.25'
     # Healthcheck
     healthcheck:
-      test: ["CMD", "python3", "-c", "import sys; sys.path.insert(0, '/app'); import squit_client; print('OK')"]
+      test: [ "CMD", "python3", "-c", "import sys; sys.path.insert(0, '/app'); import squit_client; print('OK')" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -62,8 +62,8 @@ services:
       - ./scripts:/workspace/scripts:ro
       # Persistencia de datos generados
       - squit-data:/workspace/.squit
-    stdin_open: true  # Modo interactivo
-    tty: true         # Terminal pseudo-TTY
+    stdin_open: true # Modo interactivo
+    tty: true # Terminal pseudo-TTY
     networks:
       - squit-network
     profiles:
@@ -91,6 +91,41 @@ services:
     profiles:
       - dev
     command: start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''
+
+  # MCP Server - Model Context Protocol para LLMs
+  squit-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    container_name: squit-mcp-server
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
+      - GOOGLE_CLOUD_PROJECT=dfor-prj-dev
+      - MCP_TRANSPORT=http
+      - MCP_LOG_LEVEL=INFO
+      - PORT=8000
+    volumes:
+      - ./.config/credentials.json:/tmp/credentials.json:ro
+    networks:
+      - squit-network
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: [ "CMD", "curl", "-sf", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+    profiles:
+      - mcp
+    restart: unless-stopped
 
 networks:
   squit-network:
