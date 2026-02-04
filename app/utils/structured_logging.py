@@ -19,7 +19,7 @@ import logging
 import json
 from typing import Any, Dict, Optional
 from contextvars import ContextVar
-from datetime import datetime
+from datetime import datetime, timezone
 import traceback
 
 # Context var para tracking de request/session
@@ -44,7 +44,7 @@ class StructuredFormatter(logging.Formatter):
             String JSON con todos los campos
         """
         log_data = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -81,7 +81,7 @@ class StructuredFormatter(logging.Formatter):
         except (TypeError, ValueError) as e:
             # Fallback si JSON serialization falla
             return json.dumps({
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                 "level": "ERROR",
                 "message": f"Failed to serialize log: {e}",
                 "original_message": str(record.msg)

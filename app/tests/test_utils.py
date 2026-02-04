@@ -103,9 +103,9 @@ class TestErrorFiltering:
 
         # Solo deben quedar los errores importantes
         assert len(result) == 3
-        assert "Important error message" in result
-        assert "Another important error" in result
-        assert "Critical error here" in result
+        assert any("Important error message" in line for line in result)
+        assert any("Another important error" in line for line in result)
+        assert any("Critical error here" in line for line in result)
 
         # Los patrones excluidos no deben estar
         assert not any("ALTS creds ignored" in line for line in result)

@@ -92,7 +92,7 @@ def filter_important_errors(stderr_content: str) -> List[str]:
     return [
         line
         for line in lines
-        if line and not any(pattern in line for pattern in excluded_patterns)
+        if line.strip() and not any(pattern in line for pattern in excluded_patterns)
     ]
 
 

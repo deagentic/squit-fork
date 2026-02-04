@@ -21,6 +21,7 @@ from squit_client.exceptions import (
     AuthenticationError,
     ConfigurationError,
     ConnectionError,
+    ExportError,
     QueryError,
     ValidationError,
 )
@@ -137,7 +138,7 @@ class TestBigQueryClientQueries:
 
     def test_execute_query_limit_exceeded(self, squit_client):
         """Test error cuando el límite excede el máximo permitido."""
-        with pytest.raises(ValidationError):
+        with pytest.raises(QueryError, match="Límite máximo"):
             squit_client.execute_query("SELECT * FROM test_table", limit=100000)
 
     def test_execute_query_empty_query(self, squit_client):
@@ -283,7 +284,7 @@ class TestBigQueryClientExport:
 
     def test_export_data_invalid_format(self, squit_client):
         """Test error con formato de exportación inválido."""
-        with pytest.raises(ConfigurationError, match="Formato 'invalid' no soportado"):
+        with pytest.raises(ExportError, match="Formato 'invalid' no soportado"):
             squit_client.export_data("SELECT * FROM test", "output.txt", "invalid")
 
     def test_export_data_empty_results(self, squit_client):

@@ -7,7 +7,7 @@ para enriquecer la memoria del agente y generar few-shots dinámicos.
 
 import logging
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 from google.cloud import bigquery
 import google.genai as genai
@@ -171,7 +171,7 @@ class QueryLogger:
         try:
             # Generar query_id único
             query_hash = hashlib.md5(
-                f"{user_query}{datetime.utcnow().isoformat()}".encode()
+                f"{user_query}{datetime.now(timezone.utc).isoformat()}".encode()
             ).hexdigest()
             
             # Generar embedding
@@ -188,7 +188,7 @@ class QueryLogger:
                 "user_query": user_query,
                 "assistant_response": assistant_response,
                 "query_embedding": embedding,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "response_length": len(assistant_response),
                 "turn_number": turn_number,
                 "detected_entities": entities,

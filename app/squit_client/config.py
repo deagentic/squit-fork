@@ -105,18 +105,19 @@ class Config:
         Valida el formato de exportación.
 
         Args:
-            format_type: Formato propuesto.
+            format_type: Formato propuesto (case-insensitive).
 
         Returns:
-            Formato validado.
+            Formato validado en minúsculas.
 
         Raises:
             ValueError: Si el formato no está soportado.
         """
-        if format_type not in cls.SUPPORTED_EXPORT_FORMATS:
+        normalized_format = format_type.lower()
+        if normalized_format not in cls.SUPPORTED_EXPORT_FORMATS:
             raise ValueError(
                 f"Formato '{format_type}' no soportado. "
                 f"Formatos disponibles: {cls.SUPPORTED_EXPORT_FORMATS}"
             )
 
-        return format_type.lower()
+        return normalized_format

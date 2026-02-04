@@ -13,7 +13,7 @@ Uso:
 
 from typing import Dict, Any, Optional
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 import asyncio
 import time
@@ -55,7 +55,7 @@ class HealthChecker:
             project_id: ID del proyecto GCP
         """
         self.project_id = project_id or os.getenv("GOOGLE_CLOUD_PROJECT", "dfor-prj-dev")
-        self.start_time = datetime.utcnow()
+        self.start_time = datetime.now(timezone.utc)
     
     async def check_bigquery(self) -> Dict[str, Any]:
         """
@@ -311,11 +311,11 @@ class HealthChecker:
             overall_status = HealthStatus.DEGRADED.value
         
         # Calcular uptime
-        uptime = (datetime.utcnow() - self.start_time).total_seconds()
+        uptime = (datetime.now(timezone.utc) - self.start_time).total_seconds()
         
         return {
             "overall_status": overall_status,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "version": "2.0.0",
             "uptime_seconds": round(uptime, 2),
             "components": components

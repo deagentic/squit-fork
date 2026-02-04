@@ -22,7 +22,7 @@ Uso:
 
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import defaultdict
 import threading
 import time
@@ -36,7 +36,7 @@ class Metric:
     """Representa una métrica individual."""
     name: str
     value: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     tags: Dict[str, str] = field(default_factory=dict)
     metric_type: str = "gauge"  # gauge, counter, histogram
 
@@ -74,7 +74,7 @@ class MetricsCollector:
     def __init__(self):
         self.metrics: Dict[str, List[Metric]] = defaultdict(list)
         self.lock = threading.Lock()
-        self.start_time = datetime.utcnow()
+        self.start_time = datetime.now(timezone.utc)
     
     def gauge(self, name: str, value: float, tags: Optional[Dict[str, str]] = None):
         """
@@ -194,7 +194,7 @@ class MetricsCollector:
             
             # Agregar metadatos
             summary["_metadata"] = {
-                "uptime_seconds": (datetime.utcnow() - self.start_time).total_seconds(),
+                "uptime_seconds": (datetime.now(timezone.utc) - self.start_time).total_seconds(),
                 "total_metrics": sum(len(m) for m in self.metrics.values())
             }
             
@@ -223,7 +223,7 @@ class MetricsCollector:
         """Resetea todas las métricas."""
         with self.lock:
             self.metrics.clear()
-            self.start_time = datetime.utcnow()
+            self.start_time = datetime.now(timezone.utc)
             logger.info("Métricas reseteadas")
     
     def reset_metric(self, name: str):
