@@ -6,6 +6,8 @@ para interactuar con la tabla de objetos SQL en BigQuery.
 """
 
 import logging
+import threading
+import time
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
@@ -57,11 +59,12 @@ class BigQueryClient:
         """
         self.config = Config()
         self._client: Optional[bigquery.Client] = None
+        self._lock = threading.Lock()
         self._initialize_client(credentials_path)
 
     def _initialize_client(self, credentials_path: Optional[str]) -> None:
         """
-        Inicializa el cliente BigQuery con credenciales apropiadas.
+        Inicializa el cliente BigQuery con credenciales apropiadas de forma segura para hilos.
 
         Args:
             credentials_path: Ruta opcional a las credenciales.
@@ -69,18 +72,23 @@ class BigQueryClient:
         Raises:
             AuthenticationError: Si falla la inicialización.
         """
-        try:
-            creds_path = self.config.get_credentials_path(credentials_path)
+        with self._lock:
+            # Prevenir inicialización doble si varios hilos llaman al mismo tiempo
+            if self._client is not None:
+                return
+                
+            try:
+                creds_path = self.config.get_credentials_path(credentials_path)
 
-            if creds_path:
-                self._initialize_with_service_account(creds_path)
-            else:
-                self._initialize_with_default_credentials()
+                if creds_path:
+                    self._initialize_with_service_account(creds_path)
+                else:
+                    self._initialize_with_default_credentials()
 
-        except Exception as e:
-            raise AuthenticationError(
-                f"Error al inicializar cliente BigQuery: {e}"
-            ) from e
+            except Exception as e:
+                raise AuthenticationError(
+                    f"Error al inicializar cliente BigQuery: {e}"
+                ) from e
 
     def _initialize_with_service_account(self, creds_path: str) -> None:
         """Inicializa cliente con cuenta de servicio."""
@@ -98,7 +106,7 @@ class BigQueryClient:
     @property
     def client(self) -> bigquery.Client:
         """
-        Retorna el cliente BigQuery.
+        Retorna el cliente BigQuery (Thread-safe).
 
         Returns:
             Cliente BigQuery inicializado.
@@ -106,9 +114,10 @@ class BigQueryClient:
         Raises:
             ConnectionError: Si el cliente no está inicializado.
         """
-        if self._client is None:
-            raise ConnectionError("Cliente BigQuery no inicializado")
-        return self._client
+        with self._lock:
+            if self._client is None:
+                raise ConnectionError("Cliente BigQuery no inicializado")
+            return self._client
 
     def get_table_info(self) -> Dict[str, Any]:
         """
@@ -151,6 +160,7 @@ class BigQueryClient:
         query: str,
         limit: Optional[int] = None,
         dry_run: bool = False,
+        query_parameters: Optional[List[Any]] = None,
     ) -> pd.DataFrame:
         """
         Ejecuta una consulta SQL personalizada.
@@ -159,6 +169,7 @@ class BigQueryClient:
             query: Consulta SQL a ejecutar.
             limit: Límite opcional de filas.
             dry_run: Si True, solo valida la consulta sin ejecutarla.
+            query_parameters: Parámetros opcionales para prevenir inyección SQL.
 
         Returns:
             DataFrame con los resultados.
@@ -168,15 +179,24 @@ class BigQueryClient:
             ValidationError: Si los parámetros son inválidos.
         """
         try:
+            start_time = time.time()
             validated_query = self._prepare_query(query, limit)
-            job_config = bigquery.QueryJobConfig(dry_run=dry_run)
+            
+            kwargs = {"dry_run": dry_run}
+            if query_parameters is not None:
+                kwargs["query_parameters"] = query_parameters
+                
+            job_config = bigquery.QueryJobConfig(**kwargs)
             query_job = self.client.query(validated_query, job_config=job_config)
 
             if dry_run:
                 self._log_dry_run_results(query_job)
                 return pd.DataFrame()
 
-            return self._process_query_results(query_job)
+            df = self._process_query_results(query_job)
+            latency = time.time() - start_time
+            logger.info("Latencia de la consulta: %.2fs", latency)
+            return df
 
         except gcp_exceptions.BadRequest as e:
             raise QueryError(f"Error en la consulta SQL: {e}") from e
@@ -225,7 +245,8 @@ class BigQueryClient:
         """
         results = query_job.result()
         df = results.to_dataframe()
-        logger.info("Consulta ejecutada exitosamente. Filas: %s", f"{len(df):,}")
+        bytes_processed = query_job.total_bytes_processed or 0
+        logger.info("Consulta ejecutada exitosamente. Filas: %s, Bytes procesados: %s", f"{len(df):,}", f"{bytes_processed:,}")
         return df
 
     def get_sample_data(self, limit: int = 10) -> pd.DataFrame:
@@ -260,7 +281,7 @@ class BigQueryClient:
         limit: int = 100,
     ) -> pd.DataFrame:
         """
-        Busca objetos SQL por término de búsqueda.
+        Busca objetos SQL por término de búsqueda con proteccion a SQL injection.
 
         Args:
             search_term: Término a buscar.
@@ -281,9 +302,28 @@ class BigQueryClient:
         validated_limit = self.config.validate_query_limit(limit)
         columns = search_columns or self.config.DEFAULT_SEARCH_COLUMNS
 
-        where_clause = self._build_search_where_clause(
-            search_term, columns, object_types, servers
+        query_parameters = []
+        search_term_like = f"%{search_term}%"
+        query_parameters.append(
+            bigquery.ScalarQueryParameter("search_term", "STRING", search_term_like)
         )
+
+        search_conditions = [f"{column} LIKE @search_term" for column in columns]
+        where_clauses = [f"({' OR '.join(search_conditions)})"]
+
+        if object_types:
+            where_clauses.append("object_type IN UNNEST( @object_types)")
+            query_parameters.append(
+                bigquery.ArrayQueryParameter("object_types", "STRING", object_types)
+            )
+
+        if servers:
+            where_clauses.append("server IN UNNEST( @servers)")
+            query_parameters.append(
+                bigquery.ArrayQueryParameter("servers", "STRING", servers)
+            )
+
+        where_clause = " AND ".join(where_clauses)
 
         query = f"""
         SELECT
@@ -300,55 +340,8 @@ class BigQueryClient:
         LIMIT {validated_limit}
         """
 
-        return self.execute_query(query)
+        return self.execute_query(query, query_parameters=query_parameters)
 
-    def _build_search_where_clause(
-        self,
-        search_term: str,
-        columns: List[str],
-        object_types: Optional[List[str]],
-        servers: Optional[List[str]],
-    ) -> str:
-        """
-        Construye la cláusula WHERE para búsqueda.
-
-        Args:
-            search_term: Término a buscar.
-            columns: Columnas donde buscar.
-            object_types: Tipos de objeto para filtrar.
-            servers: Servidores para filtrar.
-
-        Returns:
-            Cláusula WHERE completa.
-        """
-        # Condiciones de búsqueda por término
-        search_conditions = [f"{column} LIKE '%{search_term}%'" for column in columns]
-        where_clauses = [f"({' OR '.join(search_conditions)})"]
-
-        # Filtros adicionales
-        if object_types:
-            types_filter = self._build_in_clause("object_type", object_types)
-            where_clauses.append(types_filter)
-
-        if servers:
-            servers_filter = self._build_in_clause("server", servers)
-            where_clauses.append(servers_filter)
-
-        return " AND ".join(where_clauses)
-
-    def _build_in_clause(self, column: str, values: List[str]) -> str:
-        """
-        Construye cláusula IN para filtros.
-
-        Args:
-            column: Nombre de la columna.
-            values: Valores para el filtro.
-
-        Returns:
-            Cláusula IN formateada.
-        """
-        escaped_values = "', '".join(values)
-        return f"{column} IN ('{escaped_values}')"
 
     def get_statistics(self) -> Dict[str, Any]:
         """
@@ -492,7 +485,7 @@ class BigQueryClient:
 
     def get_object_details(self, object_name: str, server: str) -> pd.DataFrame:
         """
-        Obtiene detalles completos de un objeto específico.
+        Obtiene detalles completos de un objeto específico de forma segura.
 
         Args:
             object_name: Nombre del objeto SQL.
@@ -510,12 +503,17 @@ class BigQueryClient:
         query = f"""
         SELECT *
         FROM `{self.config.full_table_id}`
-        WHERE object_name = '{object_name}'
-        AND server = '{server}'
+        WHERE object_name = @object_name
+        AND server = @server
         ORDER BY last_modified DESC
         """
 
-        return self.execute_query(query)
+        query_parameters = [
+            bigquery.ScalarQueryParameter("object_name", "STRING", object_name),
+            bigquery.ScalarQueryParameter("server", "STRING", server)
+        ]
+
+        return self.execute_query(query, query_parameters=query_parameters)
 
     def get_objects_by_database(
         self, server: str, database: str, limit: int = 100
@@ -541,13 +539,18 @@ class BigQueryClient:
             last_modified,
             SUBSTR(sql_code, 1, 100) as sql_preview
         FROM `{self.config.full_table_id}`
-        WHERE server = '{server}'
-        AND database = '{database}'
+        WHERE server = @server
+        AND database = @database
         ORDER BY object_type, object_name
         LIMIT {validated_limit}
         """
 
-        return self.execute_query(query)
+        query_parameters = [
+            bigquery.ScalarQueryParameter("server", "STRING", server),
+            bigquery.ScalarQueryParameter("database", "STRING", database)
+        ]
+
+        return self.execute_query(query, query_parameters=query_parameters)
 
     def validate_connection(self) -> bool:
         """
