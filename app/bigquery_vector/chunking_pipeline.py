@@ -25,7 +25,7 @@ Uso:
 
 import logging
 import traceback
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional, Any
 from datetime import datetime
 from google.cloud import bigquery
 from .config import BigQueryVectorConfig
@@ -287,7 +287,7 @@ class BigQueryChunkingPipeline:
         
         # Ejecutar query
         job = self.client.query(create_chunks_sql)
-        result = job.result()
+        job.result()
         
         # Obtener estadísticas
         stats = self._get_chunks_statistics()
@@ -401,7 +401,7 @@ class BigQueryChunkingPipeline:
         """
         
         job = self.client.query(create_index_sql)
-        result = job.result()
+        job.result()
         
         logger.info("Índice vectorial creado exitosamente")
         return {"index_name": self.config.VECTOR_INDEX_NAME, "status": "created"}

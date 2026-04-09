@@ -6,7 +6,6 @@ Cubre el bugfix de catalog_matches: 0 cuando no hay catálogo cargado.
 
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
 import pandas as pd
 import pytest
 

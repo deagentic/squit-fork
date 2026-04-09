@@ -5,18 +5,17 @@ Este módulo implementa el ETL para transferir objetos de código
 desde BigQuery a Weaviate con enrichment inteligente.
 """
 
-import hashlib
 import logging
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
+import weaviate
 from openai import OpenAI
 
 from ..squit_client import BigQueryClient
-from .config import IngestionConfig, WeaviateConfig
+from .config import IngestionConfig
 from .weaviate_client import WeaviateClient
 
 logger = logging.getLogger(__name__)

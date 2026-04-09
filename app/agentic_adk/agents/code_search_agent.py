@@ -6,7 +6,6 @@ democratizando el acceso al código legacy.
 """
 
 import logging
-from typing import Dict, Any
 from google.adk.agents import LlmAgent
 
 import sys

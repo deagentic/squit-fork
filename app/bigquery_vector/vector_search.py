@@ -8,14 +8,14 @@ la funcionalidad nativa de BigQuery Vector Search.
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any
 from google.cloud import bigquery
 from google.api_core.exceptions import ServiceUnavailable, TooManyRequests, GoogleAPIError
 from .config import BigQueryVectorConfig
 
 # Importar utilidades de robustez
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from utils.retry import retry_with_backoff, BIGQUERY_RETRY
+from utils.retry import retry_with_backoff
 from utils.metrics import get_metrics
 
 logger = logging.getLogger(__name__)

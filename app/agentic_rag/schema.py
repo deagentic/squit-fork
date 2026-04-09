@@ -5,7 +5,7 @@ Este módulo define las estructuras de datos para almacenar
 objetos de código, dependencias y metadata en Weaviate.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict
 import weaviate.classes as wvc
 
 

@@ -103,7 +103,7 @@ class WeaviateClient:
                     continue
                 
                 # Crear collection
-                collection = self.client.collections.create(
+                self.client.collections.create(
                     name=collection_name,
                     description=schema_config["description"],
                     properties=schema_config["properties"],

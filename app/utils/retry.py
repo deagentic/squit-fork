@@ -12,7 +12,7 @@ Uso:
         return api.get_data()
 """
 
-from typing import Callable, TypeVar, Any, Tuple, Type
+from typing import Callable, TypeVar, Tuple, Type
 import time
 import logging
 from functools import wraps

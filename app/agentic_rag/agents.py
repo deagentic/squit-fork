@@ -9,10 +9,11 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
+from datetime import datetime
 
 from openai import OpenAI
 
-from .config import AgentConfig, WeaviateConfig
+from .config import AgentConfig
 from .weaviate_client import WeaviateClient
 
 logger = logging.getLogger(__name__)

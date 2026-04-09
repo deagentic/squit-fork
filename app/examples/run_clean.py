@@ -5,8 +5,9 @@ Ejecutor limpio sin warnings para el cliente SQUIT.
 
 import logging
 import os
-import sys
 import warnings
+from contextlib import redirect_stderr
+from io import StringIO
 
 # Suprimir warnings específicos
 warnings.filterwarnings("ignore", category=UserWarning, module="google.cloud.bigquery")
@@ -22,10 +23,6 @@ os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GLOG_minloglevel"] = "3"
 os.environ["GRPC_TRACE"] = ""
 os.environ["GRPC_VERBOSITY"] = "NONE"
-
-# Redirigir stderr temporalmente para suprimir warnings de ALTS
-from contextlib import redirect_stderr
-from io import StringIO
 
 
 def run_example_clean():

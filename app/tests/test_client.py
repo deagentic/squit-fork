@@ -19,7 +19,6 @@ from squit_client.client import BigQueryClient
 from squit_client.config import Config
 from squit_client.exceptions import (
     AuthenticationError,
-    ConfigurationError,
     ConnectionError,
     ExportError,
     QueryError,
@@ -173,7 +172,7 @@ class TestBigQueryClientSearchOperations:
         """Test búsqueda básica de objetos."""
         squit_client._client.query.return_value = mock_query_job
 
-        result_df = squit_client.search_objects("test_proc")
+        squit_client.search_objects("test_proc")
 
         squit_client._client.query.assert_called_once()
         call_args = squit_client._client.query.call_args[0][0]

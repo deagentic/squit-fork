@@ -9,7 +9,6 @@ import json
 import logging
 from typing import Dict, Any, Optional, List
 from datetime import datetime
-from pathlib import Path
 from google.cloud import bigquery
 from .config import BigQueryVectorConfig
 
@@ -507,19 +506,19 @@ class ProgressTracker:
         print(f"📊 REPORTE DE PROGRESO - {run_id}")
         print("=" * 70)
         
-        print(f"\n📈 Resumen General:")
+        print("\n📈 Resumen General:")
         print(f"   Total Etapas: {summary['total_stages']}")
         print(f"   ✅ Completadas: {summary['completed_stages']}")
         print(f"   ❌ Fallidas: {summary['failed_stages']}")
         
-        print(f"\n📋 Etapas:")
+        print("\n📋 Etapas:")
         for stage in summary['stages']:
             status_icon = "✅" if stage['status'] == 'completed' else "❌" if stage['status'] == 'failed' else "🔄"
             duration = f"{stage['duration_seconds']}s" if stage.get('duration_seconds') else "en curso"
             print(f"   {status_icon} {stage['pipeline_stage']}: {stage['status']} ({stage['progress_percentage']:.1f}%) - {duration}")
         
         if summary['metrics']:
-            print(f"\n📊 Métricas:")
+            print("\n📊 Métricas:")
             for metric in summary['metrics'][:10]:
                 print(f"   • {metric['metric_name']}: {metric['metric_value']}")
         

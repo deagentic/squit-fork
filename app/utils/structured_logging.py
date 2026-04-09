@@ -17,10 +17,9 @@ Uso:
 
 import logging
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from contextvars import ContextVar
 from datetime import datetime, timezone
-import traceback
 
 # Context var para tracking de request/session
 request_context: ContextVar[Dict[str, Any]] = ContextVar('request_context', default={})

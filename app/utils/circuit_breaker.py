@@ -18,7 +18,7 @@ Uso:
 """
 
 from enum import Enum
-from typing import Callable, Any, Type, Tuple
+from typing import Callable, Any, Type
 import time
 import threading
 import logging

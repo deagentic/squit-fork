@@ -6,7 +6,7 @@ objetos de código, dependencias y metadata en Weaviate
 usando modelos de Gemini para embeddings y generación.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict
 import weaviate.classes as wvc
 
 

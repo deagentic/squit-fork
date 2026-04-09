@@ -10,7 +10,6 @@ import json
 import logging
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
@@ -691,7 +690,6 @@ class GeminiIngestionPipeline:
     
     def _generate_chunk_hash(self, chunk: CodeChunk) -> str:
         """Genera hash único para un chunk."""
-        import hashlib
         content = f"{chunk.parent_object_id}_{chunk.chunk_index}_{chunk.code_content}"
         return hashlib.md5(content.encode()).hexdigest()
 

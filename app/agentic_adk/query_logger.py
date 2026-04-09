@@ -8,7 +8,7 @@ para enriquecer la memoria del agente y generar few-shots dinámicos.
 import logging
 import hashlib
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from google.cloud import bigquery
 import google.genai as genai
 

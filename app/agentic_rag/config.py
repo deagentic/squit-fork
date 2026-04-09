@@ -3,7 +3,7 @@ Configuración del sistema Agentic RAG.
 """
 
 import os
-from typing import Dict, List, Optional
+from typing import Optional
 
 
 class WeaviateConfig:

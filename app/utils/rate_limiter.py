@@ -17,7 +17,6 @@ import time
 from threading import Lock
 from collections import deque
 from typing import Optional, Callable
-from contextlib import contextmanager
 import logging
 
 logger = logging.getLogger(__name__)

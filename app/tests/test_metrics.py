@@ -5,7 +5,6 @@ Tests unitarios que validan el collector de métricas thread-safe.
 """
 
 import pytest
-from unittest.mock import Mock
 from utils.metrics import MetricsCollector, get_metrics
 import time
 

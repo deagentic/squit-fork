@@ -3,7 +3,6 @@ Configuración para el sistema Agentic ADK.
 """
 
 import os
-from typing import Optional
 
 
 class AgenticADKConfig:

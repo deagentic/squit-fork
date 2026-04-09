@@ -12,7 +12,7 @@ Uso:
     db_creds = secrets.get_database_credentials()
 """
 
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, List
 import os
 import logging
 from datetime import datetime, timedelta

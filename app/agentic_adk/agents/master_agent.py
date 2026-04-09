@@ -8,15 +8,12 @@ el acceso al código SQL legacy.
 import logging
 import uuid
 import asyncio
-from typing import Dict, Any, Optional
-from google.adk.agents import LlmAgent
 
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "app"))
 
 from agentic_adk.config import AgenticADKConfig
-from agentic_adk.agents.code_search_agent import CodeSearchAgent
 from agentic_adk.tools import (
     vector_search_tool,
     get_object_chunks_tool,
@@ -28,6 +25,7 @@ from agentic_adk.tools import (
 # Importar utilidades de robustez
 from utils.rate_limiter import RateLimiter
 from utils.metrics import get_metrics
+from agentic_adk.query_logger import get_query_logger
 
 logger = logging.getLogger(__name__)
 metrics = get_metrics()
@@ -39,8 +37,6 @@ try:
 except ImportError:
     LANGCHAIN_AVAILABLE = False
     logger.warning("LangChain no disponible, memoria estructurada deshabilitada")
-
-from agentic_adk.query_logger import get_query_logger
 
 
 class MasterAgent:
@@ -348,7 +344,6 @@ Responde en español, conciso, mostrando nombres reales de objetos.
                 logger.warning(f"Error obteniendo few-shots: {e}")
         
         # Combinar contextos adicionales
-        enhanced_query = user_query
         if langchain_context or few_shots_context:
             context_parts = []
             if few_shots_context:
@@ -356,8 +351,7 @@ Responde en español, conciso, mostrando nombres reales de objetos.
             if langchain_context:
                 context_parts.append(langchain_context)
             
-            enhanced_context = "\n\n".join(context_parts)
-            enhanced_query = f"{enhanced_context}\n\nQuery actual del usuario: {user_query}"
+            "\n\n".join(context_parts)
         
         try:
             from google.genai import types

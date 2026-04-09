@@ -8,8 +8,6 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 import logging
 import pandas as pd
-import pytest
-from google.cloud import bigquery
 
 # Agregar el directorio app al path para importar squit_client
 sys.path.insert(0, str(Path(__file__).parent.parent))

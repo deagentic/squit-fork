@@ -11,12 +11,13 @@ Uso:
     print(f"Status: {report['overall_status']}")
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from enum import Enum
 from datetime import datetime, timezone
-import logging
-import asyncio
 import time
+import asyncio
+import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,6 @@ class HealthChecker:
             Dict con status, latency_ms y error (si hay)
         """
         try:
-            from google.cloud import bigquery
             from utils.connection_pool import get_bigquery_client
             
             start = time.time()
@@ -329,8 +329,4 @@ class HealthChecker:
             Dict con health report
         """
         return asyncio.run(self.get_health_report())
-
-
-# Import compatible con Python sin async
-import os
 

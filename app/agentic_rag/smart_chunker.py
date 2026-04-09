@@ -7,7 +7,7 @@ para embeddings semánticos en lugar de mapeo 1:1 con BigQuery.
 
 import logging
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
@@ -361,7 +361,7 @@ class SQLSmartChunker:
                 # Mantener overlap
                 overlap_lines = self._get_overlap_lines(current_lines)
                 current_lines = overlap_lines + [line]
-                current_size = sum(len(l) + 1 for l in current_lines)
+                current_size = sum(len(line_str) + 1 for line_str in current_lines)
             else:
                 current_lines.append(line)
                 current_size += line_size
@@ -484,7 +484,7 @@ class SQLSmartChunker:
     def _calculate_complexity_score(self, code: str) -> float:
         """Calcula score de complejidad del código."""
         lines = len(code.splitlines())
-        chars = len(code)
+        len(code)
         
         # Contar estructuras complejas
         complexity_patterns = {

@@ -7,7 +7,6 @@ Verifica conectividad y estado del cluster.
 import os
 import sys
 import warnings
-from typing import Optional
 
 # Suprimir warnings innecesarios
 warnings.filterwarnings("ignore", category=UserWarning)

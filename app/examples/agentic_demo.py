@@ -14,7 +14,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agentic_rag import WeaviateClient, MasterAgent, IngestionPipeline
-from agentic_rag.config import WeaviateConfig, AgentConfig
 from squit_client import BigQueryClient
 from squit_client.exceptions import SquitError
 from squit_client.utils import setup_logging, suppress_warnings
@@ -206,7 +205,7 @@ def main():
         # Limpiar conexiones
         try:
             weaviate_client.close()
-        except:
+        except Exception:
             pass
 
 

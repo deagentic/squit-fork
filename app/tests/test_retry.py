@@ -7,7 +7,7 @@ con backoff exponencial.
 
 import pytest
 import time
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from utils.retry import retry_with_backoff, RetryConfig
 
 

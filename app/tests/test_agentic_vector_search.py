@@ -6,10 +6,8 @@ Cubre la mejora del logging (logger.debug en lugar de print).
 
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock, call
-import pandas as pd
+from unittest.mock import patch, MagicMock
 import pytest
-from google.cloud import bigquery
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -139,7 +137,7 @@ class TestVectorSearchImpl:
         mock_bq_client.query.return_value.result.return_value = []
         
         # Ejecutar
-        with patch('builtins.print') as mock_print:
+        with patch('builtins.print'):
             _vector_search_impl("test query", limit=10)
             
             # Verificar que NO se llamó print()
@@ -224,7 +222,7 @@ class TestVectorSearchImpl:
         mock_bq_client.query.return_value.result.return_value = []
         
         # Ejecutar
-        results = _vector_search_impl("ventas", limit=10)
+        _vector_search_impl("ventas", limit=10)
         
         # Verificar que se ejecutó búsqueda (debería hacer múltiples queries)
         assert mock_bq_client.query.call_count > 0

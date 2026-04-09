@@ -3,7 +3,7 @@ Configuración para BigQuery Vector Search.
 """
 
 import os
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 
 class BigQueryVectorConfig:
