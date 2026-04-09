@@ -170,7 +170,7 @@ class QueryLogger:
         """
         try:
             # Generar query_id único
-            query_hash = hashlib.md5(
+            query_hash = hashlib.sha256(
                 f"{user_query}{datetime.now(timezone.utc).isoformat()}".encode()
             ).hexdigest()
             

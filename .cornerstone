@@ -1,0 +1,10 @@
+{
+  "starter": "unknown",
+  "capabilities": [
+    "common"
+  ],
+  "agents_repo": "https://github.com/deagentic/cornerstone-agents",
+  "agents_ref": "master",
+  "cornerstone_version": "0.8.3",
+  "generated_at": "2026-04-09T16:53:38.566396Z"
+}

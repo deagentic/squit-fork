@@ -6,7 +6,7 @@ import json
 
 async def run():
     api_key = os.getenv("SQUIT_API_KEY", "f6d0f3e1c5f8f4ea054ac19ca8cfc5f84fd967418b714c0be1f0ccd98c53cd1c")
-    url = "https://squit-mcp.deacero.us/mcp/sse"
+    url = "http://localhost:8000/sse"
     
     print(f"🔄 Conectando a {url}...")
     

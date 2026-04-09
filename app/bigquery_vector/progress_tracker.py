@@ -157,34 +157,59 @@ class ProgressTracker:
             checkpoint_data: Datos de checkpoint para recovery.
             metadata: Metadatos adicionales.
         """
-        checkpoint_json = self._json_to_sql(checkpoint_data) if checkpoint_data else "NULL"
-        metadata_json = self._json_to_sql(metadata) if metadata else "NULL"
+        from google.cloud import bigquery
+        import json
+        
+        checkpoint_val = json.dumps(checkpoint_data) if checkpoint_data else None
+        metadata_val = json.dumps(metadata) if metadata else None
+        
+        # Parámetros base comunes
+        query_params = [
+            bigquery.ScalarQueryParameter("run_id", "STRING", run_id),
+            bigquery.ScalarQueryParameter("stage", "STRING", stage),
+            bigquery.ScalarQueryParameter("status", "STRING", status),
+            bigquery.ScalarQueryParameter("progress", "FLOAT64", progress),
+            bigquery.ScalarQueryParameter("items_processed", "INT64", items_processed),
+            bigquery.ScalarQueryParameter("items_total", "INT64", items_total),
+            bigquery.ScalarQueryParameter("checkpoint_data", "JSON", checkpoint_val),
+            bigquery.ScalarQueryParameter("metadata", "JSON", metadata_val)
+        ]
         
         # Verificar si existe el registro
         check_sql = f"""
         SELECT COUNT(*) as count
         FROM `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.PROGRESS_TABLE}`
-        WHERE run_id = '{run_id}' AND pipeline_stage = '{stage}'
+        WHERE run_id = @run_id AND pipeline_stage = @stage
         """
         
-        result = list(self.client.query(check_sql))
+        check_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("run_id", "STRING", run_id),
+                bigquery.ScalarQueryParameter("stage", "STRING", stage)
+            ]
+        )
+        
+        result = list(self.client.query(check_sql, job_config=check_config))
         exists = result[0].count > 0 if result else False
+        
+        job_config = bigquery.QueryJobConfig(query_parameters=query_params)
         
         if exists:
             # UPDATE
+            completed_at_sql = "CURRENT_TIMESTAMP()" if status == 'completed' else "NULL"
             update_sql = f"""
             UPDATE `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.PROGRESS_TABLE}`
             SET 
-                status = '{status}',
-                progress_percentage = {progress},
-                items_processed = {items_processed},
-                items_total = {items_total},
-                checkpoint_data = {checkpoint_json},
-                metadata = {metadata_json},
-                completed_at = {f"CURRENT_TIMESTAMP()" if status == 'completed' else "NULL"}
-            WHERE run_id = '{run_id}' AND pipeline_stage = '{stage}'
+                status = @status,
+                progress_percentage = @progress,
+                items_processed = @items_processed,
+                items_total = @items_total,
+                checkpoint_data = PARSE_JSON(@checkpoint_data),
+                metadata = PARSE_JSON(@metadata),
+                completed_at = {completed_at_sql}
+            WHERE run_id = @run_id AND pipeline_stage = @stage
             """
-            self.client.query(update_sql).result()
+            self.client.query(update_sql, job_config=job_config).result()
         else:
             # INSERT
             insert_sql = f"""
@@ -192,18 +217,18 @@ class ProgressTracker:
             (run_id, pipeline_stage, status, started_at, progress_percentage, 
              items_processed, items_total, checkpoint_data, metadata)
             VALUES (
-                '{run_id}',
-                '{stage}',
-                '{status}',
+                @run_id,
+                @stage,
+                @status,
                 CURRENT_TIMESTAMP(),
-                {progress},
-                {items_processed},
-                {items_total},
-                {checkpoint_json},
-                {metadata_json}
+                @progress,
+                @items_processed,
+                @items_total,
+                PARSE_JSON(@checkpoint_data),
+                PARSE_JSON(@metadata)
             )
             """
-            self.client.query(insert_sql).result()
+            self.client.query(insert_sql, job_config=job_config).result()
         
         logger.info(f"📊 {stage}: {status} ({progress:.1f}%) - {items_processed}/{items_total}")
     

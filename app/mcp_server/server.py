@@ -245,7 +245,7 @@ def main():
         # Modo HTTP para produccion containerizada
         import uvicorn
         # Usar la aplicación MCP directamente para evitar problemas de montaje/lifespan
-        app = mcp.http_app(path="/mcp")
+        app = mcp.http_app(transport="sse")
 
         from starlette.responses import JSONResponse
         async def health_check(request):
