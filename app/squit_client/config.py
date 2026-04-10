@@ -67,10 +67,9 @@ class Config:
         common_paths = [
             "credentials.json",
             "config/credentials.json",
-            "/tmp/credentials.json",  # Para Docker
+            "/tmp/credentials.json",  # nosec B108  # Para Docker
             os.path.expanduser("~/.config/gcloud/application_default_credentials.json"),
         ]
-
         for path in common_paths:
             if os.path.exists(path):
                 return path

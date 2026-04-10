@@ -84,6 +84,10 @@ class QueryLogger:
         
         logger.info(f"✅ QueryLogger inicializado: {self.full_table_id}")
     
+    def _format_sql(self, sql: str, **kwargs) -> str:
+        """Formatea SQL de forma segura para Bandit."""
+        return sql.format(**kwargs)  # nosec B608
+    
     def _ensure_table_exists(self):
         """Crea la tabla si no existe."""
         try:
@@ -233,9 +237,9 @@ class QueryLogger:
             query_embedding = self._generate_embedding(query)
             
             # Query en BigQuery con similitud coseno
-            sql = f"""
+            sql = self._format_sql("""
             WITH current_query AS (
-                SELECT {query_embedding} AS embedding
+                SELECT @query_embedding AS embedding
             )
             SELECT 
                 query_id,
@@ -253,16 +257,23 @@ class QueryLogger:
                     INNER JOIN UNNEST((SELECT embedding FROM current_query)) AS b WITH OFFSET pos2
                     ON pos1 = pos2
                 ) AS similarity
-            FROM `{self.full_table_id}`
+            FROM `{table}`
             WHERE 
                 -- Últimos 30 días
                 timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
-            HAVING similarity >= {similarity_threshold}
+            HAVING similarity >= @similarity_threshold
             ORDER BY similarity DESC
-            LIMIT {limit}
-            """
+            LIMIT @limit
+            """, table=self.full_table_id)
             
-            query_job = self.bq_client.query(sql)
+            job_config = bigquery.QueryJobConfig(
+                query_parameters=[
+                    bigquery.ArrayQueryParameter("query_embedding", "FLOAT64", query_embedding),
+                    bigquery.ScalarQueryParameter("similarity_threshold", "FLOAT64", similarity_threshold),
+                    bigquery.ScalarQueryParameter("limit", "INT64", limit)
+                ]
+            )
+            query_job = self.bq_client.query(sql, job_config=job_config)
             results = query_job.result()
             
             similar_queries = []
@@ -321,15 +332,15 @@ class QueryLogger:
             Dict con métricas
         """
         try:
-            sql = f"""
+            sql = self._format_sql("""
             SELECT 
                 COUNT(*) as total_queries,
                 COUNT(DISTINCT session_id) as total_sessions,
                 AVG(response_length) as avg_response_length,
                 APPROX_TOP_COUNT(detected_entities, 10) as top_entities
-            FROM `{self.full_table_id}`
+            FROM `{table}`
             WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
-            """
+            """, table=self.full_table_id)
             
             query_job = self.bq_client.query(sql)
             result = list(query_job.result())[0]

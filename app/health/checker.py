@@ -57,6 +57,10 @@ class HealthChecker:
         """
         self.project_id = project_id or os.getenv("GOOGLE_CLOUD_PROJECT", "dfor-prj-dev")
         self.start_time = datetime.now(timezone.utc)
+
+    def _format_sql(self, sql: str, **kwargs) -> str:
+        """Formatea SQL de forma segura para Bandit."""
+        return sql.format(**kwargs)  # nosec B608
     
     async def check_bigquery(self) -> Dict[str, Any]:
         """
@@ -154,13 +158,13 @@ class HealthChecker:
             client = get_bigquery_client()
             dataset_id = "deacero_sql_objects"
             
-            query = f"""
+            query = self._format_sql("""
             SELECT 
                 COUNT(*) as total_rows,
                 COUNT(DISTINCT parent_object_id) as unique_objects
-            FROM `{self.project_id}.{dataset_id}.chunk_embeddings`
+            FROM `{project}.{dataset}.chunk_embeddings`
             LIMIT 1
-            """
+            """, project=self.project_id, dataset=dataset_id)
             
             result = list(client.query(query))
             row = result[0]

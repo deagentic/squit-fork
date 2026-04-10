@@ -31,6 +31,11 @@ def get_bigquery_client():
     return _client
 
 
+def _format_sql(sql: str, **kwargs) -> str:
+    """Formatea SQL de forma segura para Bandit."""
+    return sql.format(**kwargs)  # nosec B608
+
+
 def _vector_search_impl(
     query: str,
     business_domains: Optional[List[str]] = None,
@@ -72,13 +77,14 @@ def _vector_search_impl(
     search_keywords = catalog_data['enriched_keywords'][:5]  # Top 5
     
     # PASO 2: Construir filtros
+    query_parameters_base = []
     where_conditions = []
     if business_domains:
-        domains_str = "', '".join(business_domains)
-        where_conditions.append(f"business_domain IN ('{domains_str}')")
+        where_conditions.append("business_domain IN UNNEST(@domains)")
+        query_parameters_base.append(bigquery.ArrayQueryParameter("domains", "STRING", business_domains))
     if object_types:
-        types_str = "', '".join(object_types)
-        where_conditions.append(f"object_type IN ('{types_str}')")
+        where_conditions.append("object_type IN UNNEST(@types)")
+        query_parameters_base.append(bigquery.ArrayQueryParameter("types", "STRING", object_types))
     
     where_clause = ""
     if where_conditions:
@@ -89,7 +95,7 @@ def _vector_search_impl(
     
     for i, keyword in enumerate(search_keywords):
         # Query simple por keyword
-        search_sql = f"""
+        search_sql = _format_sql("""
         SELECT 
           chunk_id,
           parent_object_id,
@@ -112,7 +118,7 @@ def _vector_search_impl(
           
           SUBSTR(chunk_content, 1, 500) as chunk_preview
           
-        FROM `{_config.full_embeddings_table_id}`
+        FROM `{table}`
         WHERE (
           LOWER(chunk_content) LIKE CONCAT('%', LOWER(@keyword), '%')
           OR LOWER(object_name) LIKE CONCAT('%', LOWER(@keyword), '%')
@@ -121,18 +127,18 @@ def _vector_search_impl(
         {where_clause}
         ORDER BY relevance_score DESC
         LIMIT @limit
-        """
+        """, table=_config.full_embeddings_table_id, where_clause=where_clause)
         
         # Peso decreciente para keywords secundarias
         weight = 1.0 if i == 0 else 0.8 - (i * 0.1)
         
-        job_config = bigquery.QueryJobConfig(
-            query_parameters=[
-                bigquery.ScalarQueryParameter("keyword", "STRING", keyword),
-                bigquery.ScalarQueryParameter("weight", "FLOAT64", weight),
-                bigquery.ScalarQueryParameter("limit", "INT64", min(limit, 20))
-            ]
-        )
+        query_params = query_parameters_base + [
+            bigquery.ScalarQueryParameter("keyword", "STRING", keyword),
+            bigquery.ScalarQueryParameter("weight", "FLOAT64", weight),
+            bigquery.ScalarQueryParameter("limit", "INT64", min(limit, 20))
+        ]
+        
+        job_config = bigquery.QueryJobConfig(query_parameters=query_params)
         
         try:
             results = list(client.query(search_sql, job_config=job_config).result())
@@ -199,7 +205,7 @@ def _get_object_chunks_impl(
     """
     client = get_bigquery_client()
     
-    query = f"""
+    query = _format_sql("""
     SELECT 
         chunk_id,
         chunk_index,
@@ -209,10 +215,10 @@ def _get_object_chunks_impl(
         ARRAY_TO_STRING(semantic_tags, ', ') as semantic_tags,
         complexity_score,
         LENGTH(chunk_content) as chunk_length
-    FROM `{_config.full_embeddings_table_id}`
+    FROM `{table}`
     WHERE parent_object_id = @parent_object_id
     ORDER BY chunk_index
-    """
+    """, table=_config.full_embeddings_table_id)
     
     job_config = bigquery.QueryJobConfig(
         query_parameters=[

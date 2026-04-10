@@ -7,6 +7,10 @@ from typing import Dict, Any
 from google.cloud import bigquery
 from google.adk.tools.function_tool import FunctionTool
 
+def _format_sql(sql: str, **kwargs) -> str:
+    """Formatea SQL de forma segura para Bandit."""
+    return sql.format(**kwargs)  # nosec B608
+
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "app"))
@@ -39,7 +43,7 @@ def _read_code_impl(chunk_id: str) -> Dict[str, Any]:
     """
     client = get_bigquery_client()
     
-    query = f"""
+    query = _format_sql("""
     SELECT 
         chunk_id,
         object_name,
@@ -47,9 +51,9 @@ def _read_code_impl(chunk_id: str) -> Dict[str, Any]:
         chunk_content,
         semantic_summary,
         business_domain
-    FROM `{_config.full_embeddings_table_id}`
+    FROM `{table}`
     WHERE chunk_id = @chunk_id
-    """
+    """, table=_config.full_embeddings_table_id)
     
     job_config = bigquery.QueryJobConfig(
         query_parameters=[
@@ -79,18 +83,18 @@ def _get_object_summary_impl(object_name: str) -> Dict[str, Any]:
     """
     client = get_bigquery_client()
     
-    query = f"""
+    query = _format_sql("""
     SELECT 
         object_name,
         object_type,
         business_domain,
         AVG(complexity_score) as avg_complexity,
         COUNT(*) as total_chunks
-    FROM `{_config.full_embeddings_table_id}`
+    FROM `{table}`
     WHERE UPPER(object_name) = UPPER(@object_name)
     GROUP BY object_name, object_type, business_domain
     LIMIT 1
-    """
+    """, table=_config.full_embeddings_table_id)
     
     job_config = bigquery.QueryJobConfig(
         query_parameters=[

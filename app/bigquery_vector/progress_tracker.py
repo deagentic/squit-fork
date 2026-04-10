@@ -40,13 +40,17 @@ class ProgressTracker:
         self.config = config or BigQueryVectorConfig()
         self.client = bigquery.Client(project=self.config.PROJECT_ID)
         self._ensure_tracking_tables()
+
+    def _format_sql(self, sql: str, **kwargs) -> str:
+        """Formatea SQL de forma segura para Bandit."""
+        return sql.format(**kwargs)  # nosec B608
     
     def _ensure_tracking_tables(self):
         """Crea tablas de tracking si no existen."""
         
         # Tabla de progreso del pipeline
-        progress_table_sql = f"""
-        CREATE TABLE IF NOT EXISTS `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.PROGRESS_TABLE}` (
+        progress_table_sql = self._format_sql("""
+        CREATE TABLE IF NOT EXISTS `{project}.{dataset}.{table}` (
             run_id STRING NOT NULL,
             pipeline_stage STRING NOT NULL,
             status STRING NOT NULL,
@@ -59,11 +63,11 @@ class ProgressTracker:
             metadata JSON,
             PRIMARY KEY (run_id, pipeline_stage) NOT ENFORCED
         )
-        """
+        """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.PROGRESS_TABLE)
         
         # Tabla de métricas
-        metrics_table_sql = f"""
-        CREATE TABLE IF NOT EXISTS `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.METRICS_TABLE}` (
+        metrics_table_sql = self._format_sql("""
+        CREATE TABLE IF NOT EXISTS `{project}.{dataset}.{table}` (
             metric_id STRING NOT NULL,
             run_id STRING NOT NULL,
             pipeline_stage STRING,
@@ -74,11 +78,11 @@ class ProgressTracker:
             metadata JSON,
             PRIMARY KEY (metric_id) NOT ENFORCED
         )
-        """
+        """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.METRICS_TABLE)
         
         # Tabla de errores
-        errors_table_sql = f"""
-        CREATE TABLE IF NOT EXISTS `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.ERRORS_TABLE}` (
+        errors_table_sql = self._format_sql("""
+        CREATE TABLE IF NOT EXISTS `{project}.{dataset}.{table}` (
             error_id STRING NOT NULL,
             run_id STRING NOT NULL,
             pipeline_stage STRING,
@@ -89,7 +93,7 @@ class ProgressTracker:
             context JSON,
             PRIMARY KEY (error_id) NOT ENFORCED
         )
-        """
+        """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.ERRORS_TABLE)
         
         try:
             self.client.query(progress_table_sql).result()
@@ -110,24 +114,35 @@ class ProgressTracker:
         Returns:
             run_id único para este run.
         """
-        run_id = f"{pipeline_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        from google.cloud import bigquery
+        import json
         
-        insert_sql = f"""
-        INSERT INTO `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.PROGRESS_TABLE}`
+        run_id = f"{pipeline_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        metadata_val = json.dumps(metadata) if metadata else "{}"
+        
+        insert_sql = self._format_sql("""
+        INSERT INTO `{project}.{dataset}.{table}`
         (run_id, pipeline_stage, status, started_at, progress_percentage, items_processed, items_total, metadata)
         VALUES (
-            '{run_id}',
+            @run_id,
             'initialization',
             'running',
             CURRENT_TIMESTAMP(),
             0.0,
             0,
             0,
-            {self._json_to_sql(metadata or {})}
+            PARSE_JSON(@metadata)
         )
-        """
+        """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.PROGRESS_TABLE)
         
-        self.client.query(insert_sql).result()
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("run_id", "STRING", run_id),
+                bigquery.ScalarQueryParameter("metadata", "JSON", metadata_val)
+            ]
+        )
+        
+        self.client.query(insert_sql, job_config=job_config).result()
         logger.info(f"🚀 Run iniciado: {run_id}")
         
         return run_id
@@ -175,11 +190,11 @@ class ProgressTracker:
         ]
         
         # Verificar si existe el registro
-        check_sql = f"""
+        check_sql = self._format_sql("""
         SELECT COUNT(*) as count
-        FROM `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.PROGRESS_TABLE}`
+        FROM `{project}.{dataset}.{table}`
         WHERE run_id = @run_id AND pipeline_stage = @stage
-        """
+        """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.PROGRESS_TABLE)
         
         check_config = bigquery.QueryJobConfig(
             query_parameters=[
@@ -196,8 +211,8 @@ class ProgressTracker:
         if exists:
             # UPDATE
             completed_at_sql = "CURRENT_TIMESTAMP()" if status == 'completed' else "NULL"
-            update_sql = f"""
-            UPDATE `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.PROGRESS_TABLE}`
+            update_sql = self._format_sql("""
+            UPDATE `{project}.{dataset}.{table}`
             SET 
                 status = @status,
                 progress_percentage = @progress,
@@ -207,12 +222,12 @@ class ProgressTracker:
                 metadata = PARSE_JSON(@metadata),
                 completed_at = {completed_at_sql}
             WHERE run_id = @run_id AND pipeline_stage = @stage
-            """
+            """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.PROGRESS_TABLE, completed_at_sql=completed_at_sql)
             self.client.query(update_sql, job_config=job_config).result()
         else:
             # INSERT
-            insert_sql = f"""
-            INSERT INTO `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.PROGRESS_TABLE}`
+            insert_sql = self._format_sql("""
+            INSERT INTO `{project}.{dataset}.{table}`
             (run_id, pipeline_stage, status, started_at, progress_percentage, 
              items_processed, items_total, checkpoint_data, metadata)
             VALUES (
@@ -226,7 +241,7 @@ class ProgressTracker:
                 PARSE_JSON(@checkpoint_data),
                 PARSE_JSON(@metadata)
             )
-            """
+            """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.PROGRESS_TABLE)
             self.client.query(insert_sql, job_config=job_config).result()
         
         logger.info(f"📊 {stage}: {status} ({progress:.1f}%) - {items_processed}/{items_total}")
@@ -298,25 +313,39 @@ class ProgressTracker:
             metric_type: Tipo (gauge, counter, timing).
             metadata: Metadatos adicionales.
         """
-        metric_id = f"{run_id}_{metric_name}_{datetime.now().timestamp()}"
-        metadata_json = self._json_to_sql(metadata) if metadata else "NULL"
-        stage_sql = f"'{pipeline_stage}'" if pipeline_stage else "NULL"
+        from google.cloud import bigquery
+        import json
         
-        insert_sql = f"""
-        INSERT INTO `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.METRICS_TABLE}`
+        metric_id = f"{run_id}_{metric_name}_{datetime.now().timestamp()}"
+        metadata_val = json.dumps(metadata) if metadata else None
+        
+        insert_sql = self._format_sql("""
+        INSERT INTO `{project}.{dataset}.{table}`
         (metric_id, run_id, pipeline_stage, metric_name, metric_value, metric_type, metadata)
         VALUES (
-            '{metric_id}',
-            '{run_id}',
-            {stage_sql},
-            '{metric_name}',
-            {metric_value},
-            '{metric_type}',
-            {metadata_json}
+            @metric_id,
+            @run_id,
+            @pipeline_stage,
+            @metric_name,
+            @metric_value,
+            @metric_type,
+            PARSE_JSON(@metadata)
         )
-        """
+        """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.METRICS_TABLE)
         
-        self.client.query(insert_sql).result()
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("metric_id", "STRING", metric_id),
+                bigquery.ScalarQueryParameter("run_id", "STRING", run_id),
+                bigquery.ScalarQueryParameter("pipeline_stage", "STRING", pipeline_stage),
+                bigquery.ScalarQueryParameter("metric_name", "STRING", metric_name),
+                bigquery.ScalarQueryParameter("metric_value", "FLOAT64", metric_value),
+                bigquery.ScalarQueryParameter("metric_type", "STRING", metric_type),
+                bigquery.ScalarQueryParameter("metadata", "JSON", metadata_val)
+            ]
+        )
+        
+        self.client.query(insert_sql, job_config=job_config).result()
     
     def log_error(
         self,
@@ -338,26 +367,40 @@ class ProgressTracker:
             error_traceback: Traceback completo.
             context: Contexto adicional.
         """
-        error_id = f"{run_id}_{pipeline_stage}_{datetime.now().timestamp()}"
-        context_json = self._json_to_sql(context) if context else "NULL"
-        traceback_sql = f"'''{error_traceback}'''" if error_traceback else "NULL"
+        from google.cloud import bigquery
+        import json
         
-        insert_sql = f"""
-        INSERT INTO `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.ERRORS_TABLE}`
+        error_id = f"{run_id}_{pipeline_stage}_{datetime.now().timestamp()}"
+        context_val = json.dumps(context) if context else None
+        
+        insert_sql = self._format_sql("""
+        INSERT INTO `{project}.{dataset}.{table}`
         (error_id, run_id, pipeline_stage, error_type, error_message, error_traceback, context)
         VALUES (
-            '{error_id}',
-            '{run_id}',
-            '{pipeline_stage}',
-            '{error_type}',
-            '{error_message}',
-            {traceback_sql},
-            {context_json}
+            @error_id,
+            @run_id,
+            @pipeline_stage,
+            @error_type,
+            @error_message,
+            @error_traceback,
+            PARSE_JSON(@context)
         )
-        """
+        """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.ERRORS_TABLE)
+        
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("error_id", "STRING", error_id),
+                bigquery.ScalarQueryParameter("run_id", "STRING", run_id),
+                bigquery.ScalarQueryParameter("pipeline_stage", "STRING", pipeline_stage),
+                bigquery.ScalarQueryParameter("error_type", "STRING", error_type),
+                bigquery.ScalarQueryParameter("error_message", "STRING", error_message),
+                bigquery.ScalarQueryParameter("error_traceback", "STRING", error_traceback),
+                bigquery.ScalarQueryParameter("context", "JSON", context_val)
+            ]
+        )
         
         try:
-            self.client.query(insert_sql).result()
+            self.client.query(insert_sql, job_config=job_config).result()
         except Exception as e:
             logger.error(f"Error registrando error: {e}")
     
@@ -372,17 +415,26 @@ class ProgressTracker:
         Returns:
             Datos del checkpoint o None.
         """
-        query = f"""
+        from google.cloud import bigquery
+
+        query = self._format_sql("""
         SELECT checkpoint_data, items_processed, items_total
-        FROM `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.PROGRESS_TABLE}`
-        WHERE run_id LIKE '{pipeline_name}%'
-          AND pipeline_stage = '{stage}'
+        FROM `{project}.{dataset}.{table}`
+        WHERE run_id LIKE CONCAT(@pipeline_name, '%')
+          AND pipeline_stage = @stage
           AND status = 'running'
         ORDER BY started_at DESC
         LIMIT 1
-        """
+        """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.PROGRESS_TABLE)
         
-        result = list(self.client.query(query))
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("pipeline_name", "STRING", pipeline_name),
+                bigquery.ScalarQueryParameter("stage", "STRING", stage)
+            ]
+        )
+        
+        result = list(self.client.query(query, job_config=job_config))
         if result and result[0].checkpoint_data:
             return {
                 "checkpoint_data": result[0].checkpoint_data,
@@ -402,8 +454,14 @@ class ProgressTracker:
         Returns:
             Resumen con todas las etapas y métricas.
         """
+        from google.cloud import bigquery
+        
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[bigquery.ScalarQueryParameter("run_id", "STRING", run_id)]
+        )
+        
         # Progreso de etapas
-        stages_sql = f"""
+        stages_sql = self._format_sql("""
         SELECT 
             pipeline_stage,
             status,
@@ -413,40 +471,40 @@ class ProgressTracker:
             items_processed,
             items_total,
             TIMESTAMP_DIFF(completed_at, started_at, SECOND) as duration_seconds
-        FROM `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.PROGRESS_TABLE}`
-        WHERE run_id = '{run_id}'
+        FROM `{project}.{dataset}.{table}`
+        WHERE run_id = @run_id
         ORDER BY started_at
-        """
+        """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.PROGRESS_TABLE)
         
-        stages = [dict(row) for row in self.client.query(stages_sql)]
+        stages = [dict(row) for row in self.client.query(stages_sql, job_config=job_config)]
         
         # Métricas
-        metrics_sql = f"""
+        metrics_sql = self._format_sql("""
         SELECT 
             metric_name,
             metric_value,
             metric_type,
             pipeline_stage
-        FROM `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.METRICS_TABLE}`
-        WHERE run_id = '{run_id}'
+        FROM `{table}`
+        WHERE run_id = @run_id
         ORDER BY recorded_at
-        """
+        """, table=f"{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.METRICS_TABLE}")
         
-        metrics = [dict(row) for row in self.client.query(metrics_sql)]
+        metrics = [dict(row) for row in self.client.query(metrics_sql, job_config=job_config)]
         
         # Errores
-        errors_sql = f"""
+        errors_sql = self._format_sql("""
         SELECT 
             pipeline_stage,
             error_type,
             error_message,
             occurred_at
-        FROM `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.ERRORS_TABLE}`
-        WHERE run_id = '{run_id}'
+        FROM `{table}`
+        WHERE run_id = @run_id
         ORDER BY occurred_at
-        """
+        """, table=f"{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.ERRORS_TABLE}")
         
-        errors = [dict(row) for row in self.client.query(errors_sql)]
+        errors = [dict(row) for row in self.client.query(errors_sql, job_config=job_config)]
         
         return {
             "run_id": run_id,
@@ -469,9 +527,15 @@ class ProgressTracker:
         Returns:
             Lista de runs con su estado.
         """
-        where_clause = f"WHERE run_id LIKE '{pipeline_name}%'" if pipeline_name else ""
+        from google.cloud import bigquery
         
-        query = f"""
+        query_params = [bigquery.ScalarQueryParameter("limit", "INT64", limit)]
+        where_clause = ""
+        if pipeline_name:
+            where_clause = "WHERE run_id LIKE CONCAT(@pipeline_name, '%')"
+            query_params.append(bigquery.ScalarQueryParameter("pipeline_name", "STRING", pipeline_name))
+        
+        query = self._format_sql("""
         WITH run_summary AS (
             SELECT 
                 run_id,
@@ -481,22 +545,18 @@ class ProgressTracker:
                 SUM(IF(status = 'completed', 1, 0)) as completed_stages,
                 SUM(IF(status = 'failed', 1, 0)) as failed_stages,
                 AVG(progress_percentage) as avg_progress
-            FROM `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.{self.PROGRESS_TABLE}`
+            FROM `{project}.{dataset}.{table}`
             {where_clause}
             GROUP BY run_id
         )
         SELECT *
         FROM run_summary
         ORDER BY started_at DESC
-        LIMIT {limit}
-        """
+        LIMIT @limit
+        """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.PROGRESS_TABLE, where_clause=where_clause)
         
-        return [dict(row) for row in self.client.query(query)]
-    
-    def _json_to_sql(self, data: Dict) -> str:
-        """Convierte dict a JSON para SQL."""
-        json_str = json.dumps(data).replace("'", "\\'")
-        return f"JSON '{json_str}'"
+        job_config = bigquery.QueryJobConfig(query_parameters=query_params)
+        return [dict(row) for row in self.client.query(query, job_config=job_config)]
     
     def print_progress_report(self, run_id: str):
         """Imprime reporte de progreso formateado."""

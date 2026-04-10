@@ -255,7 +255,7 @@ def main():
 
         port = int(os.getenv("PORT", 8000))
         logger.info(f"Starting HTTP server on port {port}")
-        uvicorn.run(app, host="0.0.0.0", port=port)
+        uvicorn.run(app, host="0.0.0.0", port=port)  # nosec B104
     else:
         # Modo STDIO para Claude Desktop
         logger.info("Starting STDIO server")

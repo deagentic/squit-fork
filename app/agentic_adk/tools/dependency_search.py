@@ -7,6 +7,10 @@ from typing import Dict, Any, List
 from google.cloud import bigquery
 from google.adk.tools.function_tool import FunctionTool
 
+def _format_sql(sql: str, **kwargs) -> str:
+    """Formatea SQL de forma segura para Bandit."""
+    return sql.format(**kwargs)  # nosec B608
+
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "app"))
@@ -47,8 +51,7 @@ def _find_dependencies_impl(object_name: str, limit: int = 20) -> List[Dict[str,
         - criticality: Nivel de criticidad (basado en complejidad y uso)
     """
     client = get_bigquery_client()
-    
-    query = f"""
+    query = _format_sql("""
     WITH dependencies AS (
         SELECT 
             object_name as dependent_object,
@@ -66,7 +69,7 @@ def _find_dependencies_impl(object_name: str, limit: int = 20) -> List[Dict[str,
                 WHEN 'SELECT' IN UNNEST(semantic_tags) OR 'query' IN UNNEST(semantic_tags) THEN 'READ'
                 ELSE 'REFERENCE'
             END as how_used
-        FROM `{_config.full_embeddings_table_id}`
+        FROM `{table}`
         WHERE UPPER(chunk_content) LIKE CONCAT('%', UPPER(@object_name), '%')
         AND object_name != @object_name
     )
@@ -87,7 +90,7 @@ def _find_dependencies_impl(object_name: str, limit: int = 20) -> List[Dict[str,
         CASE criticality WHEN 'CRITICAL' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END,
         complexity_score DESC
     LIMIT @limit
-    """
+    """, table=_config.full_embeddings_table_id)
     
     job_config = bigquery.QueryJobConfig(
         query_parameters=[

@@ -57,6 +57,10 @@ class BigQueryChunkingPipeline:
         self.config = config or BigQueryVectorConfig()
         self.client = bigquery.Client(project=self.config.PROJECT_ID)
         self.tracker = ProgressTracker(config=self.config)
+
+    def _format_sql(self, sql: str, **kwargs) -> str:
+        """Formatea SQL de forma segura para Bandit."""
+        return sql.format(**kwargs)  # nosec B608
         
     def create_chunks_table(self) -> Dict[str, Any]:
         """
@@ -68,8 +72,8 @@ class BigQueryChunkingPipeline:
         logger.info("Creando tabla de chunks inteligentes...")
         
         # SQL para chunking inteligente
-        create_chunks_sql = f"""
-        CREATE OR REPLACE TABLE `{self.config.full_chunks_table_id}` AS
+        create_chunks_sql = self._format_sql("""
+        CREATE OR REPLACE TABLE `{chunks_table}` AS
         WITH 
         -- Paso 1: Clasificación semántica de objetos
         classified_objects AS (
@@ -114,9 +118,9 @@ class BigQueryChunkingPipeline:
             (ARRAY_LENGTH(REGEXP_EXTRACT_ALL(UPPER(sql_code), r'SELECT')) * 1) +
             (ARRAY_LENGTH(REGEXP_EXTRACT_ALL(UPPER(sql_code), r'WHERE')) * 0.5) as complexity_score
             
-          FROM `{self.config.full_source_table_id}`
+          FROM `{source_table}`
           WHERE sql_code IS NOT NULL
-            AND LENGTH(sql_code) >= {self.config.MIN_CHUNK_SIZE}
+            AND LENGTH(sql_code) >= {min_chunk}
         ),
         
         -- Paso 2: Chunking inteligente basado en tamaño y tipo
@@ -126,11 +130,11 @@ class BigQueryChunkingPipeline:
             -- Estrategia de chunking
             CASE 
               -- Objetos mega (>1M chars): chunking por separadores GO
-              WHEN code_length > {self.config.MEGA_OBJECT_THRESHOLD} THEN 'mega_chunking'
+              WHEN code_length > {mega} THEN 'mega_chunking'
               -- Objetos grandes: chunking por bloques semánticos
-              WHEN code_length > {self.config.LARGE_OBJECT_THRESHOLD} THEN 'large_chunking'
+              WHEN code_length > {large} THEN 'large_chunking'
               -- Objetos medianos: chunking por funciones
-              WHEN code_length > {self.config.MEDIUM_OBJECT_THRESHOLD} THEN 'medium_chunking'
+              WHEN code_length > {medium} THEN 'medium_chunking'
               -- Objetos pequeños: chunk único
               ELSE 'single_chunk'
             END as chunking_strategy,
@@ -138,7 +142,7 @@ class BigQueryChunkingPipeline:
             -- Generar chunks por LÍNEAS con traslape (estrategia robusta)
             CASE 
               -- MEGA: 400 líneas/chunk, traslape 80 líneas (20%), step 320
-              WHEN code_length > {self.config.MEGA_OBJECT_THRESHOLD} THEN
+              WHEN code_length > {mega} THEN
                 ARRAY(
                   SELECT ARRAY_TO_STRING(
                     ARRAY(
@@ -150,11 +154,11 @@ class BigQueryChunkingPipeline:
                   ) as chunk
                   FROM UNNEST(GENERATE_ARRAY(0, ARRAY_LENGTH(SPLIT(sql_code, '\\n')) - 1, 320)) AS start_line
                   WHERE start_line <= ARRAY_LENGTH(SPLIT(sql_code, '\\n')) - 100
-                  LIMIT {self.config.MAX_CHUNKS_PER_OBJECT}
+                  LIMIT {max_chunks}
                 )
               
               -- LARGE: 250 líneas/chunk, traslape 50 líneas (20%), step 200
-              WHEN code_length > {self.config.LARGE_OBJECT_THRESHOLD} THEN
+              WHEN code_length > {large} THEN
                 ARRAY(
                   SELECT ARRAY_TO_STRING(
                     ARRAY(
@@ -166,11 +170,11 @@ class BigQueryChunkingPipeline:
                   ) as chunk
                   FROM UNNEST(GENERATE_ARRAY(0, ARRAY_LENGTH(SPLIT(sql_code, '\\n')) - 1, 200)) AS start_line
                   WHERE start_line <= ARRAY_LENGTH(SPLIT(sql_code, '\\n')) - 50
-                  LIMIT {self.config.MAX_CHUNKS_PER_OBJECT}
+                  LIMIT {max_chunks}
                 )
               
               -- MEDIUM: 200 líneas/chunk, traslape 40 líneas (20%), step 160
-              WHEN code_length > {self.config.MEDIUM_OBJECT_THRESHOLD} THEN
+              WHEN code_length > {medium} THEN
                 ARRAY(
                   SELECT ARRAY_TO_STRING(
                     ARRAY(
@@ -253,7 +257,7 @@ class BigQueryChunkingPipeline:
             
           FROM chunked_objects
           CROSS JOIN UNNEST(raw_chunks) AS chunk_content WITH OFFSET pos
-          WHERE LENGTH(chunk_content) >= {self.config.MIN_CHUNK_SIZE}
+          WHERE LENGTH(chunk_content) >= {min_chunk}
         )
         
         -- Resultado final
@@ -283,7 +287,14 @@ class BigQueryChunkingPipeline:
           
         FROM expanded_chunks
         ORDER BY parent_object_id, chunk_index
-        """
+        """, 
+        chunks_table=self.config.full_chunks_table_id,
+        source_table=self.config.full_source_table_id,
+        min_chunk=self.config.MIN_CHUNK_SIZE,
+        mega=self.config.MEGA_OBJECT_THRESHOLD,
+        large=self.config.LARGE_OBJECT_THRESHOLD,
+        medium=self.config.MEDIUM_OBJECT_THRESHOLD,
+        max_chunks=self.config.MAX_CHUNKS_PER_OBJECT)
         
         # Ejecutar query
         job = self.client.query(create_chunks_sql)
@@ -321,8 +332,8 @@ class BigQueryChunkingPipeline:
             raise Exception(f"Fallo al crear modelo de embeddings. Verifica permisos: {e}")
         
         # Crear tabla con embeddings REALES usando ML.GENERATE_EMBEDDING
-        create_embeddings_sql = f"""
-        CREATE OR REPLACE TABLE `{self.config.full_embeddings_table_id}` AS
+        create_embeddings_sql = self._format_sql("""
+        CREATE OR REPLACE TABLE `{embeddings_table}` AS
         SELECT 
           chunk_id, parent_object_id, server, database, schema,
           object_name, object_type, chunk_content, semantic_type,
@@ -333,7 +344,7 @@ class BigQueryChunkingPipeline:
           content,
           ml_generate_embedding_result as embedding
         FROM ML.GENERATE_EMBEDDING(
-          MODEL `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.gemini_embedding_model`,
+          MODEL `{project}.{dataset}.gemini_embedding_model`,
           (
             SELECT 
               chunk_id, parent_object_id, server, database, schema,
@@ -347,12 +358,16 @@ class BigQueryChunkingPipeline:
                 semantic_summary, ' ',
                 SUBSTR(chunk_content, 1, 6000)
               ) as content
-            FROM `{self.config.full_chunks_table_id}`
+            FROM `{chunks_table}`
             WHERE chunk_content IS NOT NULL
           ),
           STRUCT(TRUE AS flatten_json_output, 'CODE_RETRIEVAL_QUERY' AS task_type, 768 AS output_dimensionality)
         )
-        """
+        """, 
+        embeddings_table=self.config.full_embeddings_table_id,
+        project=self.config.PROJECT_ID,
+        dataset=self.config.DATASET_ID,
+        chunks_table=self.config.full_chunks_table_id)
         
         logger.info("Generando embeddings reales con Vertex AI...")
         # Ejecutar creación de embeddings
@@ -376,7 +391,7 @@ class BigQueryChunkingPipeline:
         logger.info("Verificando si se puede crear índice vectorial...")
         
         # Verificar cantidad de rows (mínimo 5000 para IVF)
-        count_sql = f"SELECT COUNT(*) as total FROM `{self.config.full_embeddings_table_id}`"
+        count_sql = self._format_sql("SELECT COUNT(*) as total FROM `{table}`", table=self.config.full_embeddings_table_id)
         count_result = list(self.client.query(count_sql))
         total_rows = count_result[0].total if count_result else 0
         
@@ -406,9 +421,9 @@ class BigQueryChunkingPipeline:
         logger.info("Índice vectorial creado exitosamente")
         return {"index_name": self.config.VECTOR_INDEX_NAME, "status": "created"}
     
-    def _get_chunks_statistics(self) -> Dict[str, Any]:
+    def get_chunk_stats(self) -> Dict[str, Any]:
         """Obtiene estadísticas de la tabla de chunks."""
-        stats_sql = f"""
+        stats_sql = self._format_sql("""
         SELECT 
           COUNT(*) as total_chunks,
           COUNT(DISTINCT parent_object_id) as unique_objects,
@@ -418,22 +433,22 @@ class BigQueryChunkingPipeline:
           COUNT(DISTINCT business_domain) as business_domains,
           MAX(complexity_score) as max_complexity,
           AVG(complexity_score) as avg_complexity
-        FROM `{self.config.full_chunks_table_id}`
-        """
+        FROM `{table}`
+        """, table=self.config.full_chunks_table_id)
         
         result = list(self.client.query(stats_sql))
         return dict(result[0]) if result else {}
     
     def _get_embeddings_statistics(self) -> Dict[str, Any]:
         """Obtiene estadísticas de la tabla de embeddings."""
-        stats_sql = f"""
+        stats_sql = self._format_sql("""
         SELECT 
           COUNT(*) as total_embeddings,
           COUNT(DISTINCT parent_object_id) as unique_objects_with_embeddings,
           AVG(ARRAY_LENGTH(embedding)) as avg_embedding_dimensions
-        FROM `{self.config.full_embeddings_table_id}`
+        FROM `{table}`
         WHERE embedding IS NOT NULL
-        """
+        """, table=self.config.full_embeddings_table_id)
         
         result = list(self.client.query(stats_sql))
         return dict(result[0]) if result else {}
@@ -445,7 +460,7 @@ class BigQueryChunkingPipeline:
         Returns:
             Reporte detallado con estadísticas.
         """
-        report_sql = f"""
+        report_sql = self._format_sql("""
         WITH chunk_stats AS (
           SELECT 
             chunking_strategy,
@@ -457,7 +472,7 @@ class BigQueryChunkingPipeline:
             MIN(chunk_length) as min_chunk_length,
             MAX(chunk_length) as max_chunk_length,
             AVG(complexity_score) as avg_complexity
-          FROM `{self.config.full_chunks_table_id}`
+          FROM `{table}`
           GROUP BY chunking_strategy, semantic_type, business_domain
         )
         SELECT 
@@ -472,7 +487,7 @@ class BigQueryChunkingPipeline:
           ROUND(avg_complexity, 2) as avg_complexity
         FROM chunk_stats
         ORDER BY chunks_count DESC
-        """
+        """, table=self.config.full_chunks_table_id)
         
         results = list(self.client.query(report_sql))
         

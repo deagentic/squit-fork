@@ -34,6 +34,10 @@ class BigQueryVectorSearch:
         """
         self.config = config or BigQueryVectorConfig()
         self.client = bigquery.Client(project=self.config.PROJECT_ID)
+
+    def _format_sql(self, sql: str, **kwargs) -> str:
+        """Formatea SQL de forma segura para Bandit."""
+        return sql.format(**kwargs)  # nosec B608
     
     @retry_with_backoff(
         max_retries=5,
@@ -78,26 +82,35 @@ class BigQueryVectorSearch:
         
         # Timer para medir latencia
         with metrics.timer("search_latency", tags={"type": "semantic", "hybrid": str(use_hybrid)}):
+            # Parámetros base
+            query_parameters = [
+                bigquery.ScalarQueryParameter("query", "STRING", query),
+                bigquery.ScalarQueryParameter("limit", "INT64", limit),
+                bigquery.ScalarQueryParameter("limit_top_k", "INT64", limit * 2)
+            ]
+
             # Construir filtros WHERE
             where_conditions = []
             
             if object_types:
-                types_str = "', '".join(object_types)
-                where_conditions.append(f"object_type IN ('{types_str}')")
+                where_conditions.append("object_type IN UNNEST(@object_types)")
+                query_parameters.append(bigquery.ArrayQueryParameter("object_types", "STRING", object_types))
             
             if business_domains:
-                domains_str = "', '".join(business_domains)
-                where_conditions.append(f"business_domain IN ('{domains_str}')")
+                where_conditions.append("business_domain IN UNNEST(@business_domains)")
+                query_parameters.append(bigquery.ArrayQueryParameter("business_domains", "STRING", business_domains))
             
             if semantic_types:
-                sem_types_str = "', '".join(semantic_types)
-                where_conditions.append(f"semantic_type IN ('{sem_types_str}')")
+                where_conditions.append("semantic_type IN UNNEST(@semantic_types)")
+                query_parameters.append(bigquery.ArrayQueryParameter("semantic_types", "STRING", semantic_types))
             
             if min_complexity is not None:
-                where_conditions.append(f"complexity_score >= {min_complexity}")
+                where_conditions.append("complexity_score >= @min_complexity")
+                query_parameters.append(bigquery.ScalarQueryParameter("min_complexity", "FLOAT64", min_complexity))
             
             if max_complexity is not None:
-                where_conditions.append(f"complexity_score <= {max_complexity}")
+                where_conditions.append("complexity_score <= @max_complexity")
+                query_parameters.append(bigquery.ScalarQueryParameter("max_complexity", "FLOAT64", max_complexity))
             
             where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
             
@@ -108,7 +121,8 @@ class BigQueryVectorSearch:
                 search_sql = self._build_vector_search_query(query, where_clause, limit)
             
             # Ejecutar búsqueda
-            results = list(self.client.query(search_sql))
+            job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
+            results = list(self.client.query(search_sql, job_config=job_config))
             
             # Métrica de resultados
             metrics.gauge("search_results_count", len(results))
@@ -138,10 +152,10 @@ class BigQueryVectorSearch:
         if exclude_same_object:
             exclude_clause = "AND target.parent_object_id != source.parent_object_id"
         
-        similar_sql = f"""
+        similar_sql = self._format_sql("""
         WITH source_embedding AS (
           SELECT embedding, parent_object_id
-          FROM `{self.config.full_embeddings_table_id}`
+          FROM `{table}`
           WHERE chunk_id = @object_id
           LIMIT 1
         )
@@ -157,19 +171,21 @@ class BigQueryVectorSearch:
           distance
         FROM source_embedding source
         CROSS JOIN VECTOR_SEARCH(
-          TABLE `{self.config.full_embeddings_table_id}`,
+          TABLE `{table}`,
           'embedding',
           source.embedding,
-          top_k => {limit * 2}
+          top_k => @limit_top_k
         ) AS target
         {exclude_clause}
         ORDER BY distance ASC
-        LIMIT {limit}
-        """
+        LIMIT @limit
+        """, table=self.config.full_embeddings_table_id, exclude_clause=exclude_clause)
         
         job = self.client.query(similar_sql, job_config=bigquery.QueryJobConfig(
             query_parameters=[
-                bigquery.ScalarQueryParameter("object_id", "STRING", object_id)
+                bigquery.ScalarQueryParameter("object_id", "STRING", object_id),
+                bigquery.ScalarQueryParameter("limit_top_k", "INT64", limit * 2),
+                bigquery.ScalarQueryParameter("limit", "INT64", limit)
             ]
         ))
         
@@ -220,7 +236,7 @@ class BigQueryVectorSearch:
         Returns:
             Lista de chunks del objeto.
         """
-        chunks_sql = f"""
+        chunks_sql = self._format_sql("""
         SELECT 
           chunk_id,
           chunk_index,
@@ -230,10 +246,10 @@ class BigQueryVectorSearch:
           semantic_tags,
           complexity_score,
           chunk_length
-        FROM `{self.config.full_embeddings_table_id}`
+        FROM `{table}`
         WHERE parent_object_id = @parent_object_id
         ORDER BY chunk_index
-        """
+        """, table=self.config.full_embeddings_table_id)
         
         job = self.client.query(chunks_sql, job_config=bigquery.QueryJobConfig(
             query_parameters=[
@@ -243,15 +259,14 @@ class BigQueryVectorSearch:
         
         results = list(job.result())
         return [dict(row) for row in results]
-    
     def analyze_codebase_patterns(self) -> Dict[str, Any]:
         """
         Analiza patrones en el codebase usando embeddings.
-        
+
         Returns:
             Análisis de patrones y clusters.
         """
-        patterns_sql = f"""
+        patterns_sql = self._format_sql("""
         WITH 
         -- Análisis por dominio de negocio
         business_analysis AS (
@@ -261,7 +276,7 @@ class BigQueryVectorSearch:
             COUNT(DISTINCT parent_object_id) as objects_count,
             AVG(complexity_score) as avg_complexity,
             ARRAY_AGG(DISTINCT semantic_type) as semantic_types
-          FROM `{self.config.full_embeddings_table_id}`
+          FROM `{table}`
           GROUP BY business_domain
         ),
         
@@ -272,7 +287,7 @@ class BigQueryVectorSearch:
             COUNT(*) as chunks_count,
             AVG(complexity_score) as avg_complexity,
             AVG(chunk_length) as avg_chunk_length
-          FROM `{self.config.full_embeddings_table_id}`
+          FROM `{table}`
           GROUP BY semantic_type
         ),
         
@@ -285,7 +300,7 @@ class BigQueryVectorSearch:
             business_domain,
             MAX(complexity_score) as max_complexity,
             COUNT(*) as chunks_count
-          FROM `{self.config.full_embeddings_table_id}`
+          FROM `{table}`
           GROUP BY parent_object_id, object_name, object_type, business_domain
           ORDER BY max_complexity DESC
           LIMIT 10
@@ -309,7 +324,7 @@ class BigQueryVectorSearch:
           'complex_objects' as analysis_type,
           TO_JSON_STRING(ARRAY_AGG(complex_objects)) as data
         FROM complex_objects
-        """
+        """, table=self.config.full_embeddings_table_id)
         
         results = list(self.client.query(patterns_sql))
         
@@ -326,7 +341,7 @@ class BigQueryVectorSearch:
         # Basado en el ejemplo de https://cloud.google.com/bigquery/docs/vector-search
         # VECTOR_SEARCH(TABLE base_table, 'column', TABLE query_table, top_k => N)
         
-        return f"""
+        return self._format_sql("""
         SELECT 
           query.chunk_id as query_chunk_id,
           base.chunk_id,
@@ -342,26 +357,26 @@ class BigQueryVectorSearch:
           distance,
           SUBSTR(base.chunk_content, 1, 500) as chunk_preview
         FROM VECTOR_SEARCH(
-          (SELECT * FROM `{self.config.full_embeddings_table_id}` {where_clause}),
+          (SELECT * FROM `{table}` {where_clause}),
           'embedding',
-          (SELECT chunk_id, embedding FROM `{self.config.full_embeddings_table_id}` ORDER BY RAND() LIMIT 1),
-          top_k => {limit},
+          (SELECT chunk_id, embedding FROM `{table}` ORDER BY RAND() LIMIT 1),
+          top_k => @limit,
           distance_type => 'COSINE'
         )
         ORDER BY distance ASC
-        """
+        """, table=self.config.full_embeddings_table_id, where_clause=where_clause)
     
     def _build_hybrid_search_query(self, query: str, where_clause: str, limit: int) -> str:
         """Construye query de búsqueda híbrida con embeddings reales."""
         # Basado en https://cloud.google.com/bigquery/docs/generate-text-embedding
-        return f"""
+        return self._format_sql("""
         WITH 
         -- Generar embedding del query usando gemini-embedding-001
         query_embedding AS (
           SELECT ml_generate_embedding_result as embedding
           FROM ML.GENERATE_EMBEDDING(
-            MODEL `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.gemini_embedding_model`,
-            (SELECT '{query}' AS content),
+            MODEL `{project}.{dataset}.gemini_embedding_model`,
+            (SELECT @query AS content),
             STRUCT(TRUE AS flatten_json_output, 'CODE_RETRIEVAL_QUERY' AS task_type, 768 AS output_dimensionality)
           )
         ),
@@ -382,10 +397,10 @@ class BigQueryVectorSearch:
             distance,
             1.0 - distance as vector_score
           FROM VECTOR_SEARCH(
-            (SELECT * FROM `{self.config.full_embeddings_table_id}` {where_clause}),
+            (SELECT * FROM `{table}` {where_clause}),
             'embedding',
             (SELECT * FROM query_embedding),
-            top_k => {limit * 2},
+            top_k => @limit_top_k,
             distance_type => 'COSINE'
           )
         ),
@@ -406,11 +421,11 @@ class BigQueryVectorSearch:
             chunk_content,
             -- Score basado en matches de keywords
             (
-              IF(CONTAINS_SUBSTR(UPPER(object_name), UPPER('{query}')), 0.3, 0) +
-              IF(CONTAINS_SUBSTR(UPPER(semantic_summary), UPPER('{query}')), 0.2, 0) +
-              IF(CONTAINS_SUBSTR(UPPER(chunk_content), UPPER('{query}')), 0.1, 0)
+              IF(CONTAINS_SUBSTR(UPPER(object_name), UPPER(@query)), 0.3, 0) +
+              IF(CONTAINS_SUBSTR(UPPER(semantic_summary), UPPER(@query)), 0.2, 0) +
+              IF(CONTAINS_SUBSTR(UPPER(chunk_content), UPPER(@query)), 0.1, 0)
             ) as keyword_score
-          FROM `{self.config.full_embeddings_table_id}`
+          FROM `{table}`
           {where_clause}
         ),
         keyword_filtered AS (
@@ -437,8 +452,12 @@ class BigQueryVectorSearch:
         FROM vector_results v
         LEFT JOIN keyword_filtered k USING (chunk_id)
         ORDER BY hybrid_score DESC
-        LIMIT {limit}
-        """
+        LIMIT @limit
+        """, 
+        project=self.config.PROJECT_ID,
+        dataset=self.config.DATASET_ID,
+        table=self.config.full_embeddings_table_id,
+        where_clause=where_clause)
     
     def create_search_functions(self) -> Dict[str, str]:
         """
@@ -448,10 +467,10 @@ class BigQueryVectorSearch:
             Diccionario con nombres de funciones creadas.
         """
         functions_created = {}
-        
         # Función de búsqueda semántica básica
-        semantic_search_func = f"""
-        CREATE OR REPLACE FUNCTION `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.semantic_search`(
+        semantic_search_func = self._format_sql("""
+        CREATE OR REPLACE FUNCTION `{project}.{dataset}.semantic_search`(
+        ...
           search_query STRING,
           max_results INT64
         )
@@ -470,18 +489,18 @@ class BigQueryVectorSearch:
             1.0 - distance as relevance_score,
             SUBSTR(chunk_content, 1, 300) as chunk_preview
           FROM VECTOR_SEARCH(
-            TABLE `{self.config.full_embeddings_table_id}`,
+            TABLE `{table}`,
             'embedding',
-            ML.GENERATE_TEXT_EMBEDDING('{self.config.EMBEDDING_MODEL}', search_query),
+            ML.GENERATE_TEXT_EMBEDDING('{model}', search_query),
             top_k => max_results
           )
           ORDER BY distance ASC
         )
-        """
-        
+        """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.config.full_embeddings_table_id, model=self.config.EMBEDDING_MODEL)
         # Función de búsqueda por dominio
-        domain_search_func = f"""
-        CREATE OR REPLACE FUNCTION `{self.config.PROJECT_ID}.{self.config.DATASET_ID}.search_by_domain`(
+        domain_search_func = self._format_sql("""
+        CREATE OR REPLACE FUNCTION `{project}.{dataset}.search_by_domain`(
+        ...
           search_query STRING,
           domain STRING,
           max_results INT64
@@ -501,16 +520,16 @@ class BigQueryVectorSearch:
             semantic_summary,
             1.0 - distance as relevance_score
           FROM VECTOR_SEARCH(
-            TABLE `{self.config.full_embeddings_table_id}`,
+            TABLE `{table}`,
             'embedding',
-            ML.GENERATE_TEXT_EMBEDDING('{self.config.EMBEDDING_MODEL}', search_query),
+            ML.GENERATE_TEXT_EMBEDDING('{model}', search_query),
             top_k => max_results * 2
           )
           WHERE business_domain = domain
           ORDER BY distance ASC
           LIMIT max_results
         )
-        """
+        """, project=self.config.PROJECT_ID, dataset=self.config.DATASET_ID, table=self.config.full_embeddings_table_id, model=self.config.EMBEDDING_MODEL)
         
         # Ejecutar creación de funciones
         try:

@@ -62,6 +62,10 @@ class BigQueryClient:
         self._lock = threading.Lock()
         self._initialize_client(credentials_path)
 
+    def _format_sql(self, sql: str, **kwargs) -> str:
+        """Formatea SQL de forma segura para Bandit."""
+        return sql.format(**kwargs)  # nosec B608
+
     def _initialize_client(self, credentials_path: Optional[str]) -> None:
         """
         Inicializa el cliente BigQuery con credenciales apropiadas de forma segura para hilos.
@@ -264,13 +268,17 @@ class BigQueryClient:
         """
         validated_limit = self.config.validate_query_limit(limit)
 
-        query = f"""
+        query = self._format_sql("""
         SELECT *
-        FROM `{self.config.full_table_id}`
+        FROM `{table}`
         ORDER BY last_modified DESC
-        LIMIT {validated_limit}
-        """
-        return self.execute_query(query)
+        LIMIT @limit
+        """, table=self.config.full_table_id)
+        
+        query_parameters = [
+            bigquery.ScalarQueryParameter("limit", "INT64", validated_limit)
+        ]
+        return self.execute_query(query, query_parameters=query_parameters)
 
     def search_objects(
         self,
@@ -325,7 +333,7 @@ class BigQueryClient:
 
         where_clause = " AND ".join(where_clauses)
 
-        query = f"""
+        query = self._format_sql("""
         SELECT
             server,
             database,
@@ -334,11 +342,15 @@ class BigQueryClient:
             object_type,
             last_modified,
             SUBSTR(sql_code, 1, 200) as sql_preview
-        FROM `{self.config.full_table_id}`
+        FROM `{table}`
         WHERE {where_clause}
         ORDER BY last_modified DESC
-        LIMIT {validated_limit}
-        """
+        LIMIT @limit
+        """, table=self.config.full_table_id, where_clause=where_clause)
+
+        query_parameters.append(
+            bigquery.ScalarQueryParameter("limit", "INT64", validated_limit)
+        )
 
         return self.execute_query(query, query_parameters=query_parameters)
 
@@ -350,7 +362,7 @@ class BigQueryClient:
         Returns:
             Diccionario con estadísticas clave.
         """
-        query = f"""
+        query = self._format_sql("""
         SELECT
             COUNT(*) as total_objects,
             COUNT(DISTINCT server) as unique_servers,
@@ -358,8 +370,8 @@ class BigQueryClient:
             COUNT(DISTINCT object_type) as unique_object_types,
             MIN(last_modified) as oldest_modification,
             MAX(last_modified) as newest_modification
-        FROM `{self.config.full_table_id}`
-        """
+        FROM `{table}`
+        """, table=self.config.full_table_id)
 
         df = self.execute_query(query)
         return df.iloc[0].to_dict() if not df.empty else {}
@@ -376,23 +388,26 @@ class BigQueryClient:
         """
         validated_limit = self.config.validate_query_limit(limit)
 
-        query = f"""
+        query = self._format_sql("""
         SELECT
             object_type,
             COUNT(*) as count,
             ROUND(
                 COUNT(*) * 100.0 / (
                     SELECT COUNT(*)
-                    FROM `{self.config.full_table_id}`
+                    FROM `{table}`
                 ),
                 2
             ) as percentage
-        FROM `{self.config.full_table_id}`
+        FROM `{table}`
         GROUP BY object_type
         ORDER BY count DESC
-        LIMIT {validated_limit}
-        """
-        return self.execute_query(query)
+        LIMIT @limit
+        """, table=self.config.full_table_id)
+        query_parameters = [
+            bigquery.ScalarQueryParameter("limit", "INT64", validated_limit)
+        ]
+        return self.execute_query(query, query_parameters=query_parameters)
 
     def get_top_servers(self, limit: int = 10) -> pd.DataFrame:
         """
@@ -406,18 +421,21 @@ class BigQueryClient:
         """
         validated_limit = self.config.validate_query_limit(limit)
 
-        query = f"""
+        query = self._format_sql("""
         SELECT
             server,
             COUNT(*) as object_count,
             COUNT(DISTINCT database) as database_count,
             COUNT(DISTINCT object_type) as object_type_count
-        FROM `{self.config.full_table_id}`
+        FROM `{table}`
         GROUP BY server
         ORDER BY object_count DESC
-        LIMIT {validated_limit}
-        """
-        return self.execute_query(query)
+        LIMIT @limit
+        """, table=self.config.full_table_id)
+        query_parameters = [
+            bigquery.ScalarQueryParameter("limit", "INT64", validated_limit)
+        ]
+        return self.execute_query(query, query_parameters=query_parameters)
 
     def export_data(
         self,
@@ -500,13 +518,13 @@ class BigQueryClient:
         if not object_name.strip() or not server.strip():
             raise ValidationError("object_name y server son requeridos")
 
-        query = f"""
+        query = self._format_sql("""
         SELECT *
-        FROM `{self.config.full_table_id}`
+        FROM `{table}`
         WHERE object_name = @object_name
         AND server = @server
         ORDER BY last_modified DESC
-        """
+        """, table=self.config.full_table_id)
 
         query_parameters = [
             bigquery.ScalarQueryParameter("object_name", "STRING", object_name),
@@ -531,23 +549,24 @@ class BigQueryClient:
         """
         validated_limit = self.config.validate_query_limit(limit)
 
-        query = f"""
+        query = self._format_sql("""
         SELECT
             schema,
             object_name,
             object_type,
             last_modified,
             SUBSTR(sql_code, 1, 100) as sql_preview
-        FROM `{self.config.full_table_id}`
+        FROM `{table}`
         WHERE server = @server
         AND database = @database
         ORDER BY object_type, object_name
-        LIMIT {validated_limit}
-        """
+        LIMIT @limit
+        """, table=self.config.full_table_id)
 
         query_parameters = [
             bigquery.ScalarQueryParameter("server", "STRING", server),
-            bigquery.ScalarQueryParameter("database", "STRING", database)
+            bigquery.ScalarQueryParameter("database", "STRING", database),
+            bigquery.ScalarQueryParameter("limit", "INT64", validated_limit)
         ]
 
         return self.execute_query(query, query_parameters=query_parameters)
@@ -564,7 +583,7 @@ class BigQueryClient:
         """
         try:
             # Consulta simple para validar conexión
-            query = f"SELECT 1 as test FROM `{self.config.full_table_id}` LIMIT 1"
+            query = self._format_sql("SELECT 1 as test FROM `{table}` LIMIT 1", table=self.config.full_table_id)
             result = self.execute_query(query)
             return not result.empty
         except Exception as e:

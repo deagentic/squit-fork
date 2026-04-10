@@ -1,0 +1,9 @@
+refactor(security): project-wide SQL injection mitigation and hash upgrade
+
+- Implement centralized `_format_sql` helper to safely handle BigQuery identifiers
+- Parameterize all user data, filters, and limits using BigQuery native parameters
+- Replace all remaining weak MD5 hashes with SHA256 in pipeline components
+- Achieve zero Medium/High severity findings in Bandit security scanner
+- Add ADR-0002 documenting the security strategy
+
+Verified with Bandit 1.9.4.

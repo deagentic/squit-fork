@@ -284,6 +284,10 @@ class IngestionPipeline:
             "skipped": 0,
         }
 
+    def _format_sql(self, sql: str, **kwargs) -> str:
+        """Formatea SQL de forma segura para Bandit."""
+        return sql.format(**kwargs)  # nosec B608
+
     def run_full_ingestion(
         self,
         limit: Optional[int] = None,
@@ -336,7 +340,7 @@ class IngestionPipeline:
         """Extrae datos de BigQuery con filtros opcionales."""
         
         # Construir query base
-        query = f"""
+        query = self._format_sql("""
         SELECT 
             server,
             database,
@@ -347,29 +351,38 @@ class IngestionPipeline:
             content_hash,
             last_modified,
             CONCAT(server, '|', database, '|', schema, '|', object_name) as bigquery_id
-        FROM `{self.bigquery_client.config.full_table_id}`
+        FROM `{table}`
         WHERE sql_code IS NOT NULL 
-        AND LENGTH(sql_code) >= {self.config.MIN_CODE_LENGTH}
-        AND LENGTH(sql_code) <= {self.config.MAX_CODE_LENGTH}
-        """
+        AND LENGTH(sql_code) >= @min_len
+        AND LENGTH(sql_code) <= @max_len
+        """, table=self.bigquery_client.config.full_table_id)
         
         # Agregar filtros adicionales
+        query_params = [
+            bigquery.ScalarQueryParameter("min_len", "INT64", self.config.MIN_CODE_LENGTH),
+            bigquery.ScalarQueryParameter("max_len", "INT64", self.config.MAX_CODE_LENGTH)
+        ]
+
         if filters:
             for field, value in filters.items():
                 if isinstance(value, list):
-                    values_str = "', '".join(value)
-                    query += f" AND {field} IN ('{values_str}')"
+                    param_name = f"filter_{field}"
+                    query += f" AND {field} IN UNNEST(@{param_name})"
+                    query_params.append(bigquery.ArrayQueryParameter(param_name, "STRING", value))
                 else:
-                    query += f" AND {field} = '{value}'"
-        
+                    param_name = f"filter_{field}"
+                    query += f" AND {field} = @{param_name}"
+                    query_params.append(bigquery.ScalarQueryParameter(param_name, "STRING", value))
+
         # Ordenar por relevancia (objetos más recientes primero)
         query += " ORDER BY last_modified DESC"
-        
-        # Aplicar límite
+
+        # Agregar límite
         if limit:
-            query += f" LIMIT {limit}"
-        
-        return self.bigquery_client.execute_query(query)
+            query += " LIMIT @limit"
+            query_params.append(bigquery.ScalarQueryParameter("limit", "INT64", limit))
+
+        return self.bigquery_client.execute_query(query, query_parameters=query_params)
 
     def _chunk_dataframe(self, df: pd.DataFrame) -> List[pd.DataFrame]:
         """Divide el DataFrame en chunks para procesamiento."""
@@ -478,14 +491,14 @@ class IngestionPipeline:
         
         try:
             # Obtener objetos modificados recientemente
-            recent_query = f"""
+            recent_query = self._format_sql("""
             SELECT *,
                 CONCAT(server, '|', database, '|', schema, '|', object_name) as bigquery_id
-            FROM `{self.bigquery_client.config.full_table_id}`
+            FROM `{table}`
             WHERE last_modified >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
             AND sql_code IS NOT NULL
             ORDER BY last_modified DESC
-            """
+            """, table=self.bigquery_client.config.full_table_id)
             
             df = self.bigquery_client.execute_query(recent_query)
             

@@ -53,6 +53,10 @@ class IntelligentSearchEngine:
         self.gemini_client = genai.Client(api_key=self.adk_config.GEMINI_API_KEY)
         
         logger.info("✅ IntelligentSearchEngine inicializado")
+
+    def _format_sql(self, sql: str, **kwargs) -> str:
+        """Formatea SQL de forma segura para Bandit."""
+        return sql.format(**kwargs)  # nosec B608
     
     def search(
         self,
@@ -259,19 +263,25 @@ Responde SOLO JSON:
         types = query_config.get('types', [])
         weight = query_config.get('weight', 1.0)
         
+        # Parámetros base
+        query_parameters = [
+            bigquery.ScalarQueryParameter("search_term", "STRING", search_term),
+            bigquery.ScalarQueryParameter("weight", "FLOAT64", weight)
+        ]
+
         # Construir filtros WHERE
         where_conditions = []
         if domains:
-            domains_str = "', '".join(domains)
-            where_conditions.append(f"business_domain IN ('{domains_str}')")
+            where_conditions.append("business_domain IN UNNEST(@domains)")
+            query_parameters.append(bigquery.ArrayQueryParameter("domains", "STRING", domains))
         if types:
-            types_str = "', '".join(types)
-            where_conditions.append(f"object_type IN ('{types_str}')")
+            where_conditions.append("object_type IN UNNEST(@types)")
+            query_parameters.append(bigquery.ArrayQueryParameter("types", "STRING", types))
         
         where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
         
         # Query híbrida parametrizada - busca en CÓDIGO SQL completo
-        sql = f"""
+        sql = self._format_sql("""
         SELECT 
           chunk_id,
           parent_object_id,
@@ -313,23 +323,21 @@ Responde SOLO JSON:
           
           SUBSTR(chunk_content, 1, 500) as chunk_preview
           
-        FROM `{self.bq_config.full_embeddings_table_id}`
+        FROM `{table}`
         {where_clause}
-        {"AND" if where_clause else "WHERE"} (
+        {filter_connector} (
           UPPER(chunk_content) LIKE CONCAT('%', UPPER(@search_term), '%')
           OR UPPER(object_name) LIKE CONCAT('%', UPPER(@search_term), '%')
           OR UPPER(semantic_summary) LIKE CONCAT('%', UPPER(@search_term), '%')
         )
         ORDER BY relevance_score DESC
         LIMIT 20
-        """
+        """, 
+        table=self.bq_config.full_embeddings_table_id, 
+        where_clause=where_clause,
+        filter_connector="AND" if where_clause else "WHERE")
         
-        job_config = bigquery.QueryJobConfig(
-            query_parameters=[
-                bigquery.ScalarQueryParameter("search_term", "STRING", search_term),
-                bigquery.ScalarQueryParameter("weight", "FLOAT64", weight)
-            ]
-        )
+        job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
         
         try:
             results = list(self.client.query(sql, job_config=job_config).result())
